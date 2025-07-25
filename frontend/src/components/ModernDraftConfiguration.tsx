@@ -51,7 +51,6 @@ const ModernDraftConfiguration: React.FC = () => {
     roster_positions: DEFAULT_ROSTER
   });
   
-  const [useRandomPosition, setUseRandomPosition] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
 
@@ -225,7 +224,6 @@ const ModernDraftConfiguration: React.FC = () => {
                         <Select
                           value={config.draft_position || 1}
                           onChange={(e) => {
-                            setUseRandomPosition(false);
                             setConfig(prev => ({ ...prev, draft_position: parseInt(e.target.value) }));
                           }}
                           bg="white"
@@ -249,7 +247,6 @@ const ModernDraftConfiguration: React.FC = () => {
                           onClick={() => {
                             const randomPosition = Math.floor(Math.random() * config.num_teams) + 1;
                             setConfig(prev => ({ ...prev, draft_position: randomPosition }));
-                            setUseRandomPosition(false);
                           }}
                           minW="80px"
                         >
