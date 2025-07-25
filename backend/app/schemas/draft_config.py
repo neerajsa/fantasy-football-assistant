@@ -17,6 +17,7 @@ class RosterPositions(BaseModel):
     wr: int = Field(ge=0, le=10, description="Number of WR positions")
     te: int = Field(ge=0, le=5, description="Number of TE positions")
     flex: int = Field(ge=0, le=5, description="Number of FLEX positions")
+    superflex: int = Field(ge=0, le=3, description="Number of SUPERFLEX positions")
     k: int = Field(ge=0, le=3, description="Number of K positions")
     dst: int = Field(ge=0, le=3, description="Number of D/ST positions")
     bench: int = Field(ge=0, le=15, description="Number of bench positions")

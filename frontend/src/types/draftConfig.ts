@@ -15,6 +15,7 @@ export interface RosterPositions {
   wr: number;
   te: number;
   flex: number;
+  superflex: number;
   k: number;
   dst: number;
   bench: number;

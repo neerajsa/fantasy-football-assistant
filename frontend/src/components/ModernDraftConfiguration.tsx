@@ -37,6 +37,7 @@ const DEFAULT_ROSTER: RosterPositions = {
   wr: 2,
   te: 1,
   flex: 1,
+  superflex: 0,
   k: 1,
   dst: 1,
   bench: 7
@@ -272,7 +273,7 @@ const ModernDraftConfiguration: React.FC = () => {
                     </Badge>
                   </Flex>
                   
-                  <Grid templateColumns="repeat(4, 1fr)" gap={4}>
+                  <Grid templateColumns="repeat(5, 1fr)" gap={4}>
                     {/* QB */}
                     <FormControl>
                       <FormLabel fontSize="xs" fontWeight="bold" color="gray.600" mb={2}>
@@ -349,6 +350,23 @@ const ModernDraftConfiguration: React.FC = () => {
                       <Select
                         value={config.roster_positions.flex}
                         onChange={(e) => updateRosterPosition('flex', e.target.value)}
+                        size="sm"
+                        bg="white"
+                        border="1px"
+                        borderColor="gray.300"
+                      >
+                        {[0,1,2,3].map(n => <option key={n} value={n}>{n}</option>)}
+                      </Select>
+                    </FormControl>
+
+                    {/* Superflex */}
+                    <FormControl>
+                      <FormLabel fontSize="xs" fontWeight="bold" color="gray.600" mb={2}>
+                        Superflex
+                      </FormLabel>
+                      <Select
+                        value={config.roster_positions.superflex}
+                        onChange={(e) => updateRosterPosition('superflex', e.target.value)}
                         size="sm"
                         bg="white"
                         border="1px"
