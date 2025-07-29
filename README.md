@@ -12,6 +12,12 @@ A web-based application designed to assist fantasy football players during their
   - Customizable roster positions (QB, RB, WR, TE, FLEX, K, D/ST, Bench)
   - Random or manual draft position selection
 
+- **Player Rankings Database**: Two comprehensive ranking systems:
+  - **FantasyPros Integration**: Expert consensus rankings with 539+ players
+  - **Custom Rankings**: Proprietary algorithm combining multiple data sources
+  - **API Endpoints**: Full REST API for accessing player rankings
+  - **Multiple Scoring Types**: Support for Standard, PPR, and Half-PPR
+
 ### 🔄 Coming Soon
 - Mock Draft Simulator with AI opponents
 - Live Draft Aid for real-time assistance
@@ -101,6 +107,52 @@ cd frontend && BROWSER=none npm start &
 ```
 
 **Note**: The frontend takes 30-60 seconds to fully compile and start. Wait for the "Compiled successfully!" message before accessing the application.
+
+## 📊 Database Management
+
+### Updating Player Rankings
+
+The application includes scripts for updating both FantasyPros and custom rankings databases:
+
+```bash
+# Update custom rankings only
+python -m app.scripts.update_rankings custom
+
+# Update both databases  
+python -m app.scripts.update_rankings both
+
+# For detailed instructions
+cat app/scripts/README.md
+```
+
+### Individual Data Import Scripts
+
+```bash
+# Import FantasyPros CSV data
+python -m app.data_import.csv_importer
+
+# Update FantasyPros database structure
+python -m app.data_import.update_database_structure
+
+# Generate custom rankings
+python -m app.data_import.custom_ranking_algorithm
+```
+
+### API Endpoints for Rankings
+
+```bash
+# Get custom rankings
+curl "http://localhost:8000/custom-rankings/?limit=10"
+
+# Get rankings by position
+curl "http://localhost:8000/custom-rankings/positions/QB"
+
+# Compare custom vs FantasyPros
+curl "http://localhost:8000/custom-rankings/compare"
+
+# Database statistics
+curl "http://localhost:8000/custom-rankings/stats"
+```
 
 ## 🔧 Configuration
 
