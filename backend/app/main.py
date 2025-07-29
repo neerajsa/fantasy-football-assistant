@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
-from .api import draft_config
+from .api import draft_config, custom_rankings
 
 load_dotenv()
 
@@ -22,6 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(draft_config.router)
+app.include_router(custom_rankings.router)
 
 @app.get("/")
 async def root():

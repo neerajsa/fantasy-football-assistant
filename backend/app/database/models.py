@@ -95,3 +95,34 @@ class FantasyProPlayer(BaseModel):
     
     # Data quality and freshness
     last_updated = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class CustomRankingPlayer(BaseModel):
+    """Custom first-party player rankings with same structure as FantasyPros"""
+    __tablename__ = "custom_rankings_players"
+    
+    # Primary key
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Basic player information (exact same as FantasyPros)
+    player_name = Column(String(100), nullable=False)
+    position = Column(String(10), nullable=False)
+    team = Column(String(10), nullable=False)
+    
+    # Expert Consensus Rankings by scoring type (our custom calculations)
+    ecr_rank_standard = Column(Integer)
+    ecr_rank_ppr = Column(Integer)
+    ecr_rank_half_ppr = Column(Integer)
+    
+    # Average Draft Position by scoring type (our custom calculations)
+    adp_standard = Column(Numeric(5,2))
+    adp_ppr = Column(Numeric(5,2))
+    adp_half_ppr = Column(Numeric(5,2))
+    
+    # Previous year points by scoring type (copied from FantasyPros)
+    previous_year_points_standard = Column(Numeric(6,2))
+    previous_year_points_ppr = Column(Numeric(6,2))
+    previous_year_points_half_ppr = Column(Numeric(6,2))
+    
+    # Data quality and freshness
+    last_updated = Column(DateTime(timezone=True), server_default=func.now())
