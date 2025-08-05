@@ -26,10 +26,14 @@ import {
   Badge,
   useColorModeValue,
   Flex,
+  ChakraProvider,
 } from '@chakra-ui/react';
 
 import { ScoringType, DraftType, DraftConfigurationCreate, RosterPositions } from '../types/draftConfig';
 import { draftConfigApi } from '../services/draftConfigApi';
+import { draftApi } from '../services/draftApi';
+import { DraftSessionCreate, DraftTeamCreate, DraftType as NewDraftType, ScoringType as NewScoringType } from '../types/draft';
+import DraftInterface from './DraftInterface';
 
 const DEFAULT_ROSTER: RosterPositions = {
   qb: 1,
@@ -53,6 +57,7 @@ const ModernDraftConfiguration: React.FC = () => {
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const toast = useToast();
 
   // Color scheme
@@ -66,21 +71,72 @@ const ModernDraftConfiguration: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      const response = await draftConfigApi.createDraftConfiguration(config);
+      // Convert the legacy config types to new draft types
+      const mapScoringType = (oldType: ScoringType): NewScoringType => {
+        switch (oldType) {
+          case ScoringType.STANDARD: return NewScoringType.STANDARD;
+          case ScoringType.PPR: return NewScoringType.PPR;
+          case ScoringType.HALF_PPR: return NewScoringType.HALF_PPR;
+          default: return NewScoringType.PPR;
+        }
+      };
+
+      const mapDraftType = (oldType: DraftType): NewDraftType => {
+        switch (oldType) {
+          case DraftType.SNAKE: return NewDraftType.SNAKE;
+          case DraftType.LINEAR: return NewDraftType.LINEAR;
+          default: return NewDraftType.SNAKE;
+        }
+      };
+
+      // Generate teams with user at configured position
+      const userPosition = config.draft_position ? config.draft_position - 1 : Math.floor(Math.random() * config.num_teams);
+      const teams: DraftTeamCreate[] = [];
       
-      if (response.success) {
-        toast({
-          title: 'Draft Configuration Created!',
-          description: `Your draft position is ${response.data?.draft_position}. Ready to start your mock draft.`,
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
+      for (let i = 0; i < config.num_teams; i++) {
+        teams.push({
+          team_index: i,
+          team_name: i === userPosition ? 'Your Team' : `AI Team ${i + 1}`,
+          is_user: i === userPosition
         });
       }
-    } catch (error) {
+
+      // Create the draft session
+      const draftSessionData: DraftSessionCreate = {
+        num_teams: config.num_teams,
+        draft_type: mapDraftType(config.draft_type),
+        scoring_type: mapScoringType(config.scoring_type),
+        roster_positions: {
+          qb: config.roster_positions.qb,
+          rb: config.roster_positions.rb,
+          wr: config.roster_positions.wr,
+          te: config.roster_positions.te,
+          flex: config.roster_positions.flex,
+          k: config.roster_positions.k,
+          dst: config.roster_positions.dst,
+          bench: config.roster_positions.bench
+        },
+        teams: teams
+      };
+
+      const draftSession = await draftApi.createDraftSession(draftSessionData);
+      
       toast({
-        title: 'Error',
-        description: 'Failed to create draft configuration. Please try again.',
+        title: 'Draft Created Successfully!',
+        description: `Your draft position is ${userPosition + 1}. Starting your mock draft...`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+
+      // Transition to draft interface
+      setCurrentDraftId(draftSession.id);
+      
+    } catch (error) {
+      console.error('Draft creation error:', error);
+      toast({
+        title: 'Error Creating Draft',
+        description: error instanceof Error ? error.message : 'Failed to create draft session. Please try again.',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -101,10 +157,31 @@ const ModernDraftConfiguration: React.FC = () => {
     }));
   };
 
+  const handleBackToConfiguration = () => {
+    setCurrentDraftId(null);
+  };
+
   const totalRosterSpots = Object.values(config.roster_positions).reduce((sum, count) => sum + count, 0);
 
+  // If we have a draft ID, show the draft interface
+  if (currentDraftId) {
+    return (
+      <ChakraProvider>
+        <Box>
+          <Box p={4} borderBottom="1px solid" borderColor="gray.200" bg="white" boxShadow="sm">
+            <Button variant="outline" onClick={handleBackToConfiguration}>
+              ← Back to Configuration
+            </Button>
+          </Box>
+          <DraftInterface draftId={currentDraftId} />
+        </Box>
+      </ChakraProvider>
+    );
+  }
+
   return (
-    <Box bg={bgColor} minH="100vh" py={8}>
+    <ChakraProvider>
+      <Box bg={bgColor} minH="100vh" py={8}>
       <Box maxW="6xl" mx="auto" px={6}>
         {/* Header */}
         <VStack spacing={2} mb={8}>
@@ -506,6 +583,7 @@ const ModernDraftConfiguration: React.FC = () => {
         </Grid>
       </Box>
     </Box>
+    </ChakraProvider>
   );
 };
 
