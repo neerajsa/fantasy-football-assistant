@@ -20,8 +20,6 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
-  Flex,
-  Divider,
   Stat,
   StatLabel,
   StatNumber,
@@ -31,7 +29,6 @@ import {
 import DraftBoard from './DraftBoard';
 import PlayerSearch from './PlayerSearch';
 import {
-  DraftSession,
   DraftStateResponse,
   Player,
   MakePickRequest,

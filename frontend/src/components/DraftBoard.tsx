@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Grid,
   Text,
   Badge,
   Card,
@@ -13,9 +12,7 @@ import {
   AlertIcon,
   useColorModeValue,
   Tooltip,
-  Button,
   Flex,
-  Divider,
   IconButton,
   useToast
 } from '@chakra-ui/react';
@@ -23,8 +20,6 @@ import { RepeatIcon } from '@chakra-ui/icons';
 import {
   DraftSession,
   DraftStateResponse,
-  DraftPick,
-  DraftTeam,
   DraftBoardCell,
   DraftStatus,
   Player

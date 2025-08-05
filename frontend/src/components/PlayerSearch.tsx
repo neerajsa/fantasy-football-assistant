@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import PlayerRow from './PlayerRow';
 import {
   Box,
   Input,
@@ -14,7 +15,6 @@ import {
   Tbody,
   Tr,
   Th,
-  Td,
   Badge,
   Button,
   InputGroup,
@@ -29,7 +29,6 @@ import {
   AlertIcon,
   useColorModeValue,
   IconButton,
-  Tooltip,
   Flex,
   Divider,
   useToast
@@ -185,33 +184,6 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
     });
   };
 
-  // Get rank value based on scoring type
-  const getRankValue = (player: Player): number | undefined => {
-    switch (scoringType) {
-      case 'standard':
-        return player.ecr_rank_standard;
-      case 'ppr':
-        return player.ecr_rank_ppr;
-      case 'half_ppr':
-        return player.ecr_rank_half_ppr;
-      default:
-        return player.ecr_rank_ppr;
-    }
-  };
-
-  // Get ADP value based on scoring type
-  const getAdpValue = (player: Player): number | undefined => {
-    switch (scoringType) {
-      case 'standard':
-        return player.adp_standard;
-      case 'ppr':
-        return player.adp_ppr;
-      case 'half_ppr':
-        return player.adp_half_ppr;
-      default:
-        return player.adp_ppr;
-    }
-  };
 
   if (loading && players.length === 0) {
     return (
@@ -388,73 +360,15 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
             </Thead>
             <Tbody>
               {filteredAndSortedPlayers.map((player) => (
-                <Tr
+                <PlayerRow
                   key={player.id}
-                  cursor="pointer"
-                  onClick={() => handlePlayerClick(player)}
-                  _hover={{ bg: hoverBg }}
-                  transition="all 0.2s"
-                >
-                  <Td>
-                    <Badge
-                      colorScheme={
-                        (getRankValue(player) || 999) <= 50 ? 'green' :
-                        (getRankValue(player) || 999) <= 100 ? 'yellow' : 'gray'
-                      }
-                      variant="subtle"
-                    >
-                      {getRankValue(player) || '—'}
-                    </Badge>
-                  </Td>
-                  <Td>
-                    <Text fontWeight="semibold" fontSize="sm">
-                      {player.player_name}
-                    </Text>
-                  </Td>
-                  <Td>
-                    <Badge
-                      colorScheme={
-                        player.position === 'QB' ? 'red' :
-                        player.position === 'RB' ? 'green' :
-                        player.position === 'WR' ? 'blue' :
-                        player.position === 'TE' ? 'purple' :
-                        player.position === 'K' ? 'orange' : 'gray'
-                      }
-                      size="sm"
-                    >
-                      {player.position}
-                    </Badge>
-                  </Td>
-                  <Td>
-                    <Text fontSize="sm" fontWeight="medium">
-                      {player.team}
-                    </Text>
-                  </Td>
-                  <Td>
-                    <Text fontSize="sm">
-                      {getAdpValue(player)?.toFixed(1) || '—'}
-                    </Text>
-                  </Td>
-                  <Td>
-                    <Text fontSize="sm">
-                      {player.previous_year_points_ppr?.toFixed(1) || '—'}
-                    </Text>
-                  </Td>
-                  {canMakePick && (
-                    <Td>
-                      <Button
-                        size="xs"
-                        colorScheme="green"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMakePick(player);
-                        }}
-                      >
-                        Draft
-                      </Button>
-                    </Td>
-                  )}
-                </Tr>
+                  player={player}
+                  canMakePick={canMakePick}
+                  scoringType={scoringType}
+                  onPlayerSelect={handlePlayerClick}
+                  onMakePick={handleMakePick}
+                  hoverBg={hoverBg}
+                />
               ))}
             </Tbody>
           </Table>

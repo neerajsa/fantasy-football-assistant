@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
-from .api import draft_config, custom_rankings, draft
+from .api import custom_rankings, draft
 
 load_dotenv()
 
@@ -21,7 +21,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(draft_config.router)
 app.include_router(custom_rankings.router)
 app.include_router(draft.router)
 
