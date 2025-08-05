@@ -1,7 +1,8 @@
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.types import Numeric
 from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 import uuid
 from .connection import Base
 
@@ -126,3 +127,90 @@ class CustomRankingPlayer(BaseModel):
     
     # Data quality and freshness
     last_updated = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# Draft-related enums
+draft_status_enum = ENUM('created', 'in_progress', 'completed', 'abandoned', name='draft_status')
+draft_type_enum = ENUM('snake', 'linear', name='draft_type')
+scoring_type_enum = ENUM('standard', 'ppr', 'half_ppr', name='scoring_type')
+
+
+class DraftSession(BaseModel):
+    """Represents a complete draft session with all configuration and state"""
+    __tablename__ = "draft_sessions"
+    
+    # Primary key
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Draft configuration
+    num_teams = Column(Integer, nullable=False)
+    draft_type = Column(draft_type_enum, nullable=False)
+    scoring_type = Column(scoring_type_enum, nullable=False)
+    
+    # Roster configuration stored as JSON
+    roster_positions = Column(JSON, nullable=False)  # {"qb": 1, "rb": 2, "wr": 2, etc.}
+    
+    # Draft state
+    status = Column(draft_status_enum, default='created')
+    current_round = Column(Integer, default=1)
+    current_pick = Column(Integer, default=1)
+    current_team_index = Column(Integer, default=0)  # 0-based index
+    total_rounds = Column(Integer, nullable=False)
+    
+    # Timing
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
+    
+    # Relationships
+    teams = relationship("DraftTeam", back_populates="draft_session", cascade="all, delete-orphan")
+    picks = relationship("DraftPick", back_populates="draft_session", cascade="all, delete-orphan")
+
+
+class DraftTeam(BaseModel):
+    """Represents a team in a draft session"""
+    __tablename__ = "draft_teams"
+    
+    # Primary key
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Foreign key to draft session
+    draft_session_id = Column(UUID(as_uuid=True), ForeignKey('draft_sessions.id'), nullable=False)
+    
+    # Team information
+    team_index = Column(Integer, nullable=False)  # 0-based position in draft order
+    team_name = Column(String(100), nullable=False)
+    is_user = Column(Boolean, default=False)  # True if human user, False if AI bot
+    
+    # Current roster composition (updated as picks are made)
+    current_roster = Column(JSON, default=dict)  # {"qb": 0, "rb": 1, "wr": 0, etc.}
+    
+    # Relationships
+    draft_session = relationship("DraftSession", back_populates="teams")
+    picks = relationship("DraftPick", back_populates="team", cascade="all, delete-orphan")
+
+
+class DraftPick(BaseModel):
+    """Represents a single draft pick"""
+    __tablename__ = "draft_picks"
+    
+    # Primary key
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Foreign keys
+    draft_session_id = Column(UUID(as_uuid=True), ForeignKey('draft_sessions.id'), nullable=False)
+    team_id = Column(UUID(as_uuid=True), ForeignKey('draft_teams.id'), nullable=False)
+    player_id = Column(UUID(as_uuid=True), ForeignKey('custom_rankings_players.id'), nullable=True)  # Null if pick not made yet
+    
+    # Pick information
+    round_number = Column(Integer, nullable=False)
+    pick_number = Column(Integer, nullable=False)  # Overall pick number (1-based)
+    team_pick_number = Column(Integer, nullable=False)  # Pick number within the team (1-based)
+    
+    # Pick metadata
+    picked_at = Column(DateTime(timezone=True))
+    pick_time_seconds = Column(Integer)  # Time taken to make the pick
+    
+    # Relationships
+    draft_session = relationship("DraftSession", back_populates="picks")
+    team = relationship("DraftTeam", back_populates="picks")
+    player = relationship("CustomRankingPlayer")
