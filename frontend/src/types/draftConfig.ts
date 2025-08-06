@@ -1,13 +1,6 @@
-export enum ScoringType {
-  STANDARD = 'standard',
-  PPR = 'ppr',
-  HALF_PPR = 'half_ppr'
-}
+import { ScoringType, DraftType } from './draft';
 
-export enum DraftType {
-  SNAKE = 'snake',
-  LINEAR = 'linear'
-}
+export { ScoringType, DraftType };
 
 export interface RosterPositions {
   qb: number;

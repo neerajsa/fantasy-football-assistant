@@ -13,7 +13,7 @@ import {
 
 import { ScoringType, DraftType, DraftConfigurationCreate, RosterPositions } from '../types/draftConfig';
 import { draftApi } from '../services/draftApi';
-import { DraftSessionCreate, DraftTeamCreate, DraftType as NewDraftType, ScoringType as NewScoringType } from '../types/draft';
+import { DraftSessionCreate, DraftTeamCreate } from '../types/draft';
 import DraftInterface from './DraftInterface';
 import LeagueSettings from './LeagueSettings';
 import RosterConfiguration from './RosterConfiguration';
@@ -53,24 +53,6 @@ const ModernDraftConfiguration: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // Convert the legacy config types to new draft types
-      const mapScoringType = (oldType: ScoringType): NewScoringType => {
-        switch (oldType) {
-          case ScoringType.STANDARD: return NewScoringType.STANDARD;
-          case ScoringType.PPR: return NewScoringType.PPR;
-          case ScoringType.HALF_PPR: return NewScoringType.HALF_PPR;
-          default: return NewScoringType.PPR;
-        }
-      };
-
-      const mapDraftType = (oldType: DraftType): NewDraftType => {
-        switch (oldType) {
-          case DraftType.SNAKE: return NewDraftType.SNAKE;
-          case DraftType.LINEAR: return NewDraftType.LINEAR;
-          default: return NewDraftType.SNAKE;
-        }
-      };
-
       // Generate teams with user at configured position
       const userPosition = config.draft_position ? config.draft_position - 1 : Math.floor(Math.random() * config.num_teams);
       const teams: DraftTeamCreate[] = [];
@@ -86,8 +68,8 @@ const ModernDraftConfiguration: React.FC = () => {
       // Create the draft session
       const draftSessionData: DraftSessionCreate = {
         num_teams: config.num_teams,
-        draft_type: mapDraftType(config.draft_type),
-        scoring_type: mapScoringType(config.scoring_type),
+        draft_type: config.draft_type,
+        scoring_type: config.scoring_type,
         roster_positions: {
           qb: config.roster_positions.qb,
           rb: config.roster_positions.rb,
