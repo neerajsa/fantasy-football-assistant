@@ -17,3 +17,4 @@
 - **Never assume missing context. Ask questions if uncertain.**
 - **Never hallucinate libraries or functions** – only use known, verified packages.
 - **Always confirm file paths and module names** exist before referencing them in code or tests.
+- **Do not commit code to the repository** without explicit confirmation from the user.

@@ -13,10 +13,10 @@ import {
   useColorModeValue,
   Tooltip,
   Flex,
-  IconButton,
-  useToast
+  useToast,
+  Grid,
+  Heading
 } from '@chakra-ui/react';
-import { RepeatIcon } from '@chakra-ui/icons';
 import {
   DraftSession,
   DraftStateResponse,
@@ -40,22 +40,23 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
   const [draftState, setDraftState] = useState<DraftStateResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
   const toast = useToast();
   
-  // Color mode values
+  // Color scheme - consistent with configuration page
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const currentPickBg = useColorModeValue('blue.100', 'blue.900');
-  const userTeamBg = useColorModeValue('green.50', 'green.900');
+  const primaryColor = 'purple';
+  const accentColor = 'teal';
+  
+  // Draft board specific colors
+  const currentPickBg = useColorModeValue('purple.100', 'purple.900');
+  const userTeamBg = useColorModeValue('teal.50', 'teal.900');
   const completedPickBg = useColorModeValue('gray.50', 'gray.700');
 
   // Fetch draft state
-  const fetchDraftState = useCallback(async (showRefreshing = false) => {
+  const fetchDraftState = useCallback(async () => {
     try {
-      if (showRefreshing) setRefreshing(true);
-      
       const state = await draftApi.getDraftState(draftId);
       setDraftState(state);
       setError(null);
@@ -75,7 +76,6 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
       }
     } finally {
       setLoading(false);
-      if (showRefreshing) setRefreshing(false);
     }
   }, [draftId, draftState, toast]);
 
@@ -143,10 +143,6 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
     return board;
   };
 
-  // Handle manual refresh
-  const handleRefresh = () => {
-    fetchDraftState(true);
-  };
 
   // Handle player selection from recent picks
   const handlePlayerClick = (player: Player) => {
@@ -189,181 +185,169 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
   const draftBoard = generateDraftBoard(draft_session);
 
   return (
-    <Box p={4}>
-      {/* Draft Header */}
-      <Card mb={4} bg={cardBg} borderColor={borderColor}>
-        <CardBody>
-          <Flex justify="space-between" align="center" mb={4}>
-            <VStack align="start" spacing={1}>
-              <HStack>
-                <Text fontSize="2xl" fontWeight="bold">
-                  Draft Board
-                </Text>
-                <Badge
-                  colorScheme={
-                    draft_session.status === DraftStatus.IN_PROGRESS ? 'green' :
-                    draft_session.status === DraftStatus.COMPLETED ? 'blue' : 'gray'
-                  }
-                  fontSize="sm"
-                >
-                  {draft_session.status}
-                </Badge>
-              </HStack>
-              
-              <HStack spacing={4}>
-                <Text color="gray.600">
-                  Round {draft_session.current_round} • Pick {draft_session.current_pick}
-                </Text>
-                <Text color="blue.600" fontWeight="semibold">
-                  {current_team.team_name}'s Turn
-                </Text>
-              </HStack>
-            </VStack>
+    <Box>
+      {/* Error Alert */}
+      {error && (
+        <Alert status="warning" size="sm" mb={4} borderRadius="md">
+          <AlertIcon />
+          <Text fontSize="sm">
+            Connection issue: {error} (showing cached data)
+          </Text>
+        </Alert>
+      )}
 
-            <HStack>
-              <IconButton
-                aria-label="Refresh draft"
-                icon={<RepeatIcon />}
-                onClick={handleRefresh}
-                isLoading={refreshing}
-                size="sm"
-              />
-              
-              <VStack spacing={0} align="end">
-                <Text fontSize="sm" color="gray.600">
-                  {draft_session.draft_type.toUpperCase()} • {draft_session.scoring_type.toUpperCase()}
-                </Text>
-                <Text fontSize="sm" color="gray.600">
-                  {draft_session.num_teams} Teams • {draft_session.total_rounds} Rounds
-                </Text>
-              </VStack>
-            </HStack>
-          </Flex>
-
-          {error && (
-            <Alert status="warning" size="sm" mb={4}>
-              <AlertIcon />
-              <Text fontSize="sm">
-                Connection issue: {error} (showing cached data)
-              </Text>
-            </Alert>
-          )}
-        </CardBody>
-      </Card>
-
-      {/* Team Headers */}
-      <Card mb={4} bg={cardBg} borderColor={borderColor}>
-        <CardBody p={2}>
-          <HStack spacing={2} justify="space-between">
-            {draft_session.teams?.map((team, index) => (
-              <Box
-                key={team.id}
-                flex={1}
-                textAlign="center"
-                p={2}
-                bg={team.is_user ? userTeamBg : 'transparent'}
-                borderRadius="md"
-                border={team.team_index === draft_session.current_team_index ? '2px solid' : '1px solid'}
-                borderColor={team.team_index === draft_session.current_team_index ? 'blue.400' : borderColor}
+      {/* Draft Board Grid with Traditional Row Layout */}
+      <Card bg={cardBg} shadow="sm" border="1px" borderColor={borderColor} w="100%">
+        <CardBody p={4}>
+          <Box
+            overflowX="auto"
+            w="100%"
+            css={{
+              '&::-webkit-scrollbar': {
+                height: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: '#f1f1f1',
+                borderRadius: '4px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: '#888',
+                borderRadius: '4px',
+              },
+              '&::-webkit-scrollbar-thumb:hover': {
+                background: '#555',
+              },
+            }}
+          >
+            <Box minW={`${draft_session.num_teams * 130}px`}>
+              {/* Team Headers Row */}
+              <Grid
+                templateColumns={`40px repeat(${draft_session.num_teams}, minmax(120px, 1fr))`}
+                gap={2}
+                mb={2}
               >
-                <Text fontSize="sm" fontWeight={team.is_user ? 'bold' : 'medium'} isTruncated>
-                  {team.team_name}
-                </Text>
-                {team.is_user && (
-                  <Badge size="sm" colorScheme="green" mt={1}>
-                    You
-                  </Badge>
-                )}
-              </Box>
-            ))}
-          </HStack>
-        </CardBody>
-      </Card>
-
-      {/* Draft Board Grid */}
-      <Card bg={cardBg} borderColor={borderColor}>
-        <CardBody p={2}>
-          <VStack spacing={1}>
-            {draftBoard.map((round, roundIndex) => (
-              <HStack key={roundIndex} spacing={1} w="full">
-                {/* Round number */}
-                <Box
-                  w="40px"
-                  textAlign="center"
-                  py={2}
-                  fontSize="sm"
-                  fontWeight="bold"
-                  color="gray.600"
-                >
-                  R{roundIndex + 1}
-                </Box>
+                {/* Empty cell for round label column */}
+                <Box></Box>
                 
-                {/* Pick cells */}
-                {round.map((cell, cellIndex) => (
-                  <Tooltip
-                    key={cellIndex}
-                    label={`Round ${cell.round}, Pick ${cell.pick_number}${cell.pick?.player ? ` - ${cell.pick.player?.player_name || 'Unknown Player'}` : ''}`}
-                    hasArrow
+                {/* Team Headers */}
+                {draft_session.teams?.map((team) => (
+                  <Box
+                    key={team.id}
+                    textAlign="center"
+                    p={3}
+                    bg={team.is_user ? userTeamBg : cardBg}
+                    borderRadius="md"
+                    border={team.team_index === draft_session.current_team_index ? '2px solid' : '1px solid'}
+                    borderColor={team.team_index === draft_session.current_team_index ? `${primaryColor}.400` : borderColor}
+                    shadow="sm"
                   >
-                    <Box
-                      flex={1}
-                      minH="60px"
-                      p={1}
-                      bg={
-                        cell.is_current ? currentPickBg :
-                        cell.pick?.player_id ? completedPickBg :
-                        cell.is_user_team ? userTeamBg : 'transparent'
-                      }
-                      border="1px solid"
-                      borderColor={
-                        cell.is_current ? 'blue.400' : borderColor
-                      }
-                      borderRadius="md"
-                      cursor={cell.pick?.player_id ? 'pointer' : 'default'}
-                      onClick={() => cell.pick?.player && handlePlayerClick(cell.pick.player as Player)}
-                      transition="all 0.2s"
-                      _hover={cell.pick?.player_id ? { transform: 'scale(1.02)' } : {}}
-                    >
-                      <VStack spacing={0} h="full" justify="center">
-                        <Text fontSize="xs" color="gray.500">
-                          {cell.pick_number}
-                        </Text>
-                        
-                        {cell.pick?.player_id ? (
-                          <>
-                            <Text fontSize="xs" fontWeight="bold" textAlign="center" noOfLines={1}>
-                              {(cell.pick.player as any)?.player_name || 'Unknown'}
-                            </Text>
-                            <Text fontSize="xs" color="gray.600">
-                              {(cell.pick.player as any)?.position} • {(cell.pick.player as any)?.team}
-                            </Text>
-                          </>
-                        ) : cell.is_current ? (
-                          <Text fontSize="xs" color="blue.600" fontWeight="bold">
-                            ON CLOCK
-                          </Text>
-                        ) : (
-                          <Text fontSize="xs" color="gray.400">
-                            —
-                          </Text>
-                        )}
-                      </VStack>
-                    </Box>
-                  </Tooltip>
+                    <Text fontSize="sm" fontWeight={team.is_user ? 'bold' : 'semibold'} isTruncated>
+                      {team.team_name}
+                    </Text>
+                    {team.is_user && (
+                      <Badge size="sm" colorScheme={accentColor} mt={1}>
+                        You
+                      </Badge>
+                    )}
+                  </Box>
                 ))}
-              </HStack>
-            ))}
-          </VStack>
+              </Grid>
+
+              {/* Draft Rounds */}
+              <VStack spacing={1} align="stretch">
+                {draftBoard.map((round, roundIndex) => (
+                  <Grid
+                    key={roundIndex}
+                    templateColumns={`40px repeat(${draft_session.num_teams}, minmax(120px, 1fr))`}
+                    gap={2}
+                  >
+                    {/* Round Label */}
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      fontSize="sm"
+                      fontWeight="bold"
+                      color="gray.600"
+                    >
+                      R{roundIndex + 1}
+                    </Box>
+
+                    {/* Pick Cells for this round */}
+                    {round.map((cell, cellIndex) => (
+                      <Tooltip
+                        key={cellIndex}
+                        label={`Round ${cell.round}, Pick ${cell.pick_number}${cell.pick?.player ? ` - ${cell.pick.player?.player_name || 'Unknown Player'}` : ''}`}
+                        hasArrow
+                      >
+                        <Box
+                          minH="65px"
+                          p={2}
+                          bg={
+                            cell.is_current ? currentPickBg :
+                            cell.pick?.player_id ? completedPickBg :
+                            cell.is_user_team ? userTeamBg : 'transparent'
+                          }
+                          border="1px solid"
+                          borderColor={
+                            cell.is_current ? `${primaryColor}.400` : borderColor
+                          }
+                          borderRadius="md"
+                          cursor={cell.pick?.player_id ? 'pointer' : 'default'}
+                          onClick={() => cell.pick?.player && handlePlayerClick(cell.pick.player as Player)}
+                          transition="all 0.2s"
+                          _hover={cell.pick?.player_id ? { transform: 'scale(1.02)', shadow: 'md' } : {}}
+                        >
+                          <VStack spacing={0} h="full" justify="center">
+                            <Text fontSize="xs" color="gray.500" mb={1}>
+                              #{cell.pick_number}
+                            </Text>
+                            
+                            {cell.pick?.player_id ? (
+                              <>
+                                <Text fontSize="xs" fontWeight="bold" textAlign="center" noOfLines={2}>
+                                  {(cell.pick.player as any)?.player_name || 'Unknown'}
+                                </Text>
+                                <Text fontSize="xs" color="gray.600">
+                                  {(cell.pick.player as any)?.position}
+                                </Text>
+                                <Text fontSize="xs" color="gray.500">
+                                  {(cell.pick.player as any)?.team}
+                                </Text>
+                              </>
+                            ) : cell.is_current ? (
+                              <VStack spacing={0}>
+                                <Text fontSize="xs" color={`${primaryColor}.600`} fontWeight="bold">
+                                  ON CLOCK
+                                </Text>
+                                <Badge size="xs" colorScheme={primaryColor} mt={1}>
+                                  PICKING
+                                </Badge>
+                              </VStack>
+                            ) : (
+                              <Text fontSize="xs" color="gray.400">
+                                —
+                              </Text>
+                            )}
+                          </VStack>
+                        </Box>
+                      </Tooltip>
+                    ))}
+                  </Grid>
+                ))}
+              </VStack>
+            </Box>
+          </Box>
         </CardBody>
       </Card>
 
       {/* Recent Picks */}
       {recent_picks.length > 0 && (
-        <Card mt={4} bg={cardBg} borderColor={borderColor}>
+        <Card mt={4} bg={cardBg} shadow="sm" border="1px" borderColor={borderColor}>
           <CardBody>
-            <Text fontSize="lg" fontWeight="bold" mb={3}>
+            <Heading as="h3" size="sm" color={`${primaryColor}.600`} mb={3}>
               Recent Picks
-            </Text>
+            </Heading>
             <VStack spacing={2} align="stretch">
               {recent_picks.slice(0, 5).map((pick, index) => (
                 <Box
@@ -373,8 +357,10 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                   borderRadius="md"
                   cursor="pointer"
                   onClick={() => (pick.player as Player) && handlePlayerClick(pick.player as Player)}
-                  _hover={{ transform: 'scale(1.01)' }}
+                  _hover={{ transform: 'scale(1.01)', shadow: 'md' }}
                   transition="all 0.2s"
+                  border="1px solid"
+                  borderColor={borderColor}
                 >
                   <HStack justify="space-between">
                     <VStack align="start" spacing={0}>
@@ -386,10 +372,10 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                       </Text>
                     </VStack>
                     <VStack align="end" spacing={0}>
-                      <Text fontSize="sm" fontWeight="semibold">
+                      <Badge colorScheme={primaryColor} size="sm">
                         Pick {pick.pick_number}
-                      </Text>
-                      <Text fontSize="sm" color="gray.600">
+                      </Badge>
+                      <Text fontSize="xs" color="gray.600" mt={1}>
                         Round {pick.round_number}
                       </Text>
                     </VStack>

@@ -24,7 +24,8 @@ import {
   StatLabel,
   StatNumber,
   StatGroup,
-  useColorModeValue
+  useColorModeValue,
+  Heading
 } from '@chakra-ui/react';
 import DraftBoard from './DraftBoard';
 import PlayerSearch from './PlayerSearch';
@@ -51,9 +52,12 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  // Color mode values
+  // Color scheme - consistent with configuration page
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const primaryColor = 'purple';
+  const accentColor = 'teal';
 
   // Fetch draft state
   const fetchDraftState = useCallback(async () => {
@@ -205,17 +209,17 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
   const userTeam = getUserTeam();
 
   return (
-    <Box p={4}>
+    <Box bg={bgColor} minH="100vh" p={4}>
       {/* Draft Status Header */}
-      <Card mb={6} bg={cardBg} borderColor={borderColor}>
+      <Card mb={6} bg={cardBg} shadow="sm" border="1px" borderColor={borderColor}>
         <CardBody>
           <Grid templateColumns="1fr auto 1fr" gap={6} alignItems="center">
             {/* Draft Info */}
             <VStack align="start" spacing={2}>
               <HStack>
-                <Text fontSize="2xl" fontWeight="bold">
+                <Heading as="h1" size="xl" color={`${primaryColor}.600`} fontWeight="bold">
                   Mock Draft
-                </Text>
+                </Heading>
                 <Badge
                   colorScheme={
                     draft_session.status === DraftStatus.IN_PROGRESS ? 'green' :
@@ -227,9 +231,17 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
                 </Badge>
               </HStack>
               
-              <Text color="gray.600">
-                {draft_session.num_teams} teams • {draft_session.draft_type.toUpperCase()} • {draft_session.scoring_type.toUpperCase()}
-              </Text>
+              <HStack spacing={4}>
+                <Badge colorScheme={primaryColor} size="sm">
+                  {draft_session.draft_type.toUpperCase()}
+                </Badge>
+                <Badge colorScheme={accentColor} size="sm">
+                  {draft_session.scoring_type.replace('_', ' ').toUpperCase()}
+                </Badge>
+                <Text color="gray.600" fontSize="sm">
+                  {draft_session.num_teams} teams
+                </Text>
+              </HStack>
             </VStack>
 
             {/* Current Pick Status */}
@@ -244,17 +256,22 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
                     {current_team.team_name}
                   </Text>
                   {isUserTurn() ? (
-                    <Badge colorScheme="green" fontSize="md" p={2}>
+                    <Badge colorScheme={accentColor} fontSize="md" p={2}>
                       YOUR TURN
                     </Badge>
                   ) : (
-                    <Badge colorScheme="blue" fontSize="sm">
+                    <Badge colorScheme={primaryColor} fontSize="sm">
                       On the clock
                     </Badge>
                   )}
                 </VStack>
               ) : draft_session.status === DraftStatus.CREATED ? (
-                <Button colorScheme="green" onClick={handleStartDraft}>
+                <Button 
+                  colorScheme={primaryColor} 
+                  onClick={handleStartDraft}
+                  _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                  transition="all 0.2s"
+                >
                   Start Draft
                 </Button>
               ) : (
@@ -293,12 +310,13 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
 
       {/* Main Draft Interface */}
       <Grid 
-        templateColumns={{ base: '1fr', lg: '1fr 400px' }} 
-        gap={6}
-        minH="70vh"
+        templateColumns={{ base: '1fr', xl: '1fr 500px' }} 
+        gap={4}
+        w="100%"
+        h="90vh"
       >
         {/* Draft Board */}
-        <GridItem>
+        <GridItem overflow="auto" minW={0}>
           <DraftBoard
             draftId={draftId}
             onPlayerSelect={handlePlayerSelect}
@@ -307,7 +325,7 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
         </GridItem>
 
         {/* Player Search Panel */}
-        <GridItem>
+        <GridItem w="500px" flexShrink={0} overflow="auto">
           <PlayerSearch
             draftId={draftId}
             onPlayerSelect={handlePlayerSelect}

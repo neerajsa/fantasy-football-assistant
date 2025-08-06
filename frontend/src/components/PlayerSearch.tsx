@@ -9,7 +9,6 @@ import {
   Text,
   Card,
   CardBody,
-  CardHeader,
   Table,
   Thead,
   Tbody,
@@ -28,12 +27,12 @@ import {
   Alert,
   AlertIcon,
   useColorModeValue,
-  IconButton,
   Flex,
   Divider,
-  useToast
+  useToast,
+  Heading
 } from '@chakra-ui/react';
-import { SearchIcon, RepeatIcon } from '@chakra-ui/icons';
+import { SearchIcon } from '@chakra-ui/icons';
 import {
   Player,
   PlayerSearchFilters,
@@ -63,7 +62,6 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
   
   // Filter state
   const [filters, setFilters] = useState<PlayerSearchFilters>({
@@ -82,16 +80,16 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
 
   const toast = useToast();
 
-  // Color mode values
+  // Color scheme - consistent with configuration page
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const primaryColor = 'purple';
+  const accentColor = 'teal';
   const hoverBg = useColorModeValue('gray.50', 'gray.700');
 
   // Fetch available players
-  const fetchPlayers = useCallback(async (showRefreshing = false) => {
+  const fetchPlayers = useCallback(async () => {
     try {
-      if (showRefreshing) setRefreshing(true);
-      
       const response = await draftApi.getAvailablePlayers(draftId, filters, 500);
       setPlayers(response.players);
       setError(null);
@@ -108,7 +106,6 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
       });
     } finally {
       setLoading(false);
-      if (showRefreshing) setRefreshing(false);
     }
   }, [draftId, filters, toast]);
 
@@ -160,7 +157,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
       });
 
       // Refresh player list
-      fetchPlayers(true);
+      fetchPlayers();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to make pick';
       
@@ -195,23 +192,17 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
   }
 
   return (
-    <Card bg={cardBg} borderColor={borderColor}>
-      <CardHeader pb={2}>
-        <Flex justify="space-between" align="center">
-          <Text fontSize="lg" fontWeight="bold">
-            Available Players ({players.length})
-          </Text>
-          <IconButton
-            aria-label="Refresh players"
-            icon={<RepeatIcon />}
-            size="sm"
-            onClick={() => fetchPlayers(true)}
-            isLoading={refreshing}
-          />
+    <Card bg={cardBg} shadow="sm" border="1px" borderColor={borderColor} w="100%" h="100%">
+      <CardBody p={4} display="flex" flexDirection="column" h="100%">
+        {/* Header */}
+        <Flex justify="space-between" align="center" mb={4}>
+          <Heading as="h2" size="lg" color={`${primaryColor}.600`} fontWeight="bold">
+            Available Players
+          </Heading>
+          <Badge colorScheme={accentColor} size="sm">
+            {players.length} players
+          </Badge>
         </Flex>
-      </CardHeader>
-
-      <CardBody pt={2}>
         {/* Search and Filter Controls */}
         <VStack spacing={4} mb={4}>
           {/* Search and Position Filter */}
@@ -278,7 +269,12 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
               </NumberInputStepper>
             </NumberInput>
 
-            <Button size="sm" variant="outline" onClick={clearFilters}>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              colorScheme={primaryColor} 
+              onClick={clearFilters}
+            >
               Clear
             </Button>
           </HStack>
@@ -303,7 +299,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
             </HStack>
 
             {canMakePick && (
-              <Badge colorScheme="green" p={2}>
+              <Badge colorScheme={accentColor} p={2}>
                 Click to draft
               </Badge>
             )}
@@ -314,14 +310,33 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
 
         {/* Error Alert */}
         {error && (
-          <Alert status="error" mb={4} size="sm">
+          <Alert status="error" mb={4} size="sm" borderRadius="md">
             <AlertIcon />
             <Text fontSize="sm">{error}</Text>
           </Alert>
         )}
 
         {/* Players Table */}
-        <Box overflowX="auto" maxH="600px" overflowY="auto">
+        <Box 
+          flex={1} 
+          overflowY="auto"
+          css={{
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: '#f1f1f1',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: '#888',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: '#555',
+            },
+          }}
+        >
           <Table size="sm" variant="simple">
             <Thead position="sticky" top={0} bg={cardBg} zIndex={1}>
               <Tr>
@@ -329,6 +344,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
                   cursor="pointer"
                   onClick={() => handleSort('rank')}
                   _hover={{ bg: hoverBg }}
+                  fontSize="xs"
                 >
                   Rank {sortBy === 'rank' && (sortAscending ? '↑' : '↓')}
                 </Th>
@@ -336,6 +352,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
                   cursor="pointer"
                   onClick={() => handleSort('name')}
                   _hover={{ bg: hoverBg }}
+                  fontSize="xs"
                 >
                   Player {sortBy === 'name' && (sortAscending ? '↑' : '↓')}
                 </Th>
@@ -343,19 +360,21 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
                   cursor="pointer"
                   onClick={() => handleSort('position')}
                   _hover={{ bg: hoverBg }}
+                  fontSize="xs"
                 >
                   Pos {sortBy === 'position' && (sortAscending ? '↑' : '↓')}
                 </Th>
-                <Th>Team</Th>
+                <Th fontSize="xs">Team</Th>
                 <Th
                   cursor="pointer"
                   onClick={() => handleSort('adp')}
                   _hover={{ bg: hoverBg }}
+                  fontSize="xs"
                 >
                   ADP {sortBy === 'adp' && (sortAscending ? '↑' : '↓')}
                 </Th>
-                <Th>Points</Th>
-                {canMakePick && <Th>Action</Th>}
+                <Th fontSize="xs">Points</Th>
+                {canMakePick && <Th fontSize="xs">Action</Th>}
               </Tr>
             </Thead>
             <Tbody>
@@ -378,7 +397,12 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
               <Text color="gray.500">
                 No players found matching your criteria
               </Text>
-              <Button mt={2} variant="link" onClick={clearFilters}>
+              <Button 
+                mt={2} 
+                variant="link" 
+                colorScheme={primaryColor} 
+                onClick={clearFilters}
+              >
                 Clear filters
               </Button>
             </Box>
