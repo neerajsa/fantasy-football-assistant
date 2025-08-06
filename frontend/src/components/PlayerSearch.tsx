@@ -117,9 +117,9 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
   // Filter and sort players
   const filteredAndSortedPlayers = useMemo(() => {
     let filtered = draftApi.filterPlayers(players, filters);
-    filtered = draftApi.sortPlayers(filtered, sortBy, sortAscending);
+    filtered = draftApi.sortPlayers(filtered, sortBy, sortAscending, scoringType);
     return filtered.slice(0, displayLimit);
-  }, [players, filters, sortBy, sortAscending, displayLimit]);
+  }, [players, filters, sortBy, sortAscending, displayLimit, scoringType]);
 
   // Handle filter changes
   const handleFilterChange = (key: keyof PlayerSearchFilters, value: any) => {

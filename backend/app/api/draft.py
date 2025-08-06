@@ -136,9 +136,15 @@ async def get_available_players(
     limit: int = Query(100, ge=1, le=500, description="Maximum number of players to return"),
     draft_service: DraftService = Depends(get_draft_service)
 ):
-    """Get players available for drafting, optionally filtered by position"""
+    """Get players available for drafting, optionally filtered by position and ordered by appropriate ECR ranking based on draft's scoring type"""
     try:
-        players = draft_service.get_available_players(draft_id, position, limit)
+        # Get the draft session to determine scoring type
+        draft_session = draft_service.get_draft_session(draft_id)
+        if not draft_session:
+            raise HTTPException(status_code=404, detail="Draft session not found")
+        
+        # Get available players with scoring type-aware ordering
+        players = draft_service.get_available_players(draft_id, position, limit, draft_session.scoring_type)
         
         # Convert to dict format for response
         players_dict = []
@@ -154,14 +160,19 @@ async def get_available_players(
                 "adp_ppr": float(player.adp_ppr) if player.adp_ppr else None,
                 "adp_standard": float(player.adp_standard) if player.adp_standard else None,
                 "adp_half_ppr": float(player.adp_half_ppr) if player.adp_half_ppr else None,
-                "previous_year_points_ppr": float(player.previous_year_points_ppr) if player.previous_year_points_ppr else None
+                "previous_year_points_standard": float(player.previous_year_points_standard) if player.previous_year_points_standard else None,
+                "previous_year_points_ppr": float(player.previous_year_points_ppr) if player.previous_year_points_ppr else None,
+                "previous_year_points_half_ppr": float(player.previous_year_points_half_ppr) if player.previous_year_points_half_ppr else None
             })
         
         return {
             "players": players_dict,
             "total": len(players_dict),
-            "position_filter": position
+            "position_filter": position,
+            "scoring_type": draft_session.scoring_type
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

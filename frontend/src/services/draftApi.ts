@@ -142,18 +142,18 @@ class DraftApiService {
   }
 
   // Sort players by various criteria
-  sortPlayers(players: Player[], sortBy: 'rank' | 'adp' | 'name' | 'position', ascending: boolean = true): Player[] {
+  sortPlayers(players: Player[], sortBy: 'rank' | 'adp' | 'name' | 'position', ascending: boolean = true, scoringType: string = 'ppr'): Player[] {
     const sorted = [...players].sort((a, b) => {
       let aVal: any, bVal: any;
 
       switch (sortBy) {
         case 'rank':
-          aVal = a.ecr_rank_ppr || 999;
-          bVal = b.ecr_rank_ppr || 999;
+          aVal = this.getPlayerEcrRank(a, scoringType) || 999;
+          bVal = this.getPlayerEcrRank(b, scoringType) || 999;
           break;
         case 'adp':
-          aVal = a.adp_ppr || 999;
-          bVal = b.adp_ppr || 999;
+          aVal = this.getPlayerAdp(a, scoringType) || 999;
+          bVal = this.getPlayerAdp(b, scoringType) || 999;
           break;
         case 'name':
           aVal = a.player_name;
@@ -175,6 +175,33 @@ class DraftApiService {
     });
 
     return sorted;
+  }
+
+  // Helper functions to get scoring-specific player data
+  private getPlayerEcrRank(player: Player, scoringType: string): number | undefined {
+    switch (scoringType) {
+      case 'standard':
+        return player.ecr_rank_standard;
+      case 'ppr':
+        return player.ecr_rank_ppr;
+      case 'half_ppr':
+        return player.ecr_rank_half_ppr;
+      default:
+        return player.ecr_rank_ppr;
+    }
+  }
+
+  private getPlayerAdp(player: Player, scoringType: string): number | undefined {
+    switch (scoringType) {
+      case 'standard':
+        return player.adp_standard;
+      case 'ppr':
+        return player.adp_ppr;
+      case 'half_ppr':
+        return player.adp_half_ppr;
+      default:
+        return player.adp_ppr;
+    }
   }
 }
 

@@ -194,9 +194,10 @@ class DraftService:
         self, 
         draft_id: uuid.UUID, 
         position: Optional[str] = None, 
-        limit: int = 100
+        limit: int = 100,
+        scoring_type: Optional[str] = None
     ) -> List[CustomRankingPlayer]:
-        """Get players available for drafting"""
+        """Get players available for drafting, ordered by appropriate ECR ranking based on scoring type"""
         
         # Get already drafted player IDs
         drafted_player_ids = self.db.query(DraftPick.player_id).filter(
@@ -214,8 +215,13 @@ class DraftService:
         if position:
             query = query.filter(CustomRankingPlayer.position == position.upper())
         
-        # Order by ranking (assuming lower ECR rank is better)
-        query = query.order_by(CustomRankingPlayer.ecr_rank_ppr.asc())
+        # Order by appropriate ECR ranking field based on scoring type
+        if scoring_type == 'standard':
+            query = query.order_by(CustomRankingPlayer.ecr_rank_standard.asc())
+        elif scoring_type == 'half_ppr':
+            query = query.order_by(CustomRankingPlayer.ecr_rank_half_ppr.asc())
+        else:  # Default to PPR for 'ppr' or any other/unknown scoring type
+            query = query.order_by(CustomRankingPlayer.ecr_rank_ppr.asc())
         
         return query.limit(limit).all()
     
@@ -237,7 +243,8 @@ class DraftService:
         draft_engine = DraftEngine(draft_session)
         current_team = draft_engine.get_current_team()
         
-        available_players = self.get_available_players(draft_id, limit=50)
+        # Get available players with scoring type-aware ordering
+        available_players = self.get_available_players(draft_id, limit=50, scoring_type=draft_session.scoring_type)
         recent_picks = self.get_recent_picks(draft_id, limit=5)
         
         # Convert players to dict format for response

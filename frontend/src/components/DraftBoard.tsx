@@ -12,7 +12,6 @@ import {
   AlertIcon,
   useColorModeValue,
   Tooltip,
-  Flex,
   useToast,
   Grid,
   Heading
@@ -181,7 +180,7 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
     );
   }
 
-  const { draft_session, current_team, recent_picks } = draftState;
+  const { draft_session, recent_picks } = draftState;
   const draftBoard = generateDraftBoard(draft_session);
 
   return (

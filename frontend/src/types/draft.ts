@@ -75,6 +75,8 @@ export interface Player {
   adp_standard?: number;
   adp_half_ppr?: number;
   previous_year_points_ppr?: number;
+  previous_year_points_standard?: number;
+  previous_year_points_half_ppr?: number;
 }
 
 export interface DraftStateResponse {
