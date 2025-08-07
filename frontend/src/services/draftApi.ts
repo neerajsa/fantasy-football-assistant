@@ -83,6 +83,12 @@ class DraftApiService {
     return this.request<Player>(`/api/draft/${draftId}/player/${pick.player_id}`);
   }
 
+  async makeAIPick(draftId: string): Promise<DraftPick> {
+    return this.request<DraftPick>(`/api/draft/${draftId}/ai-pick`, {
+      method: 'POST',
+    });
+  }
+
   async getAvailablePlayers(
     draftId: string, 
     filters: PlayerSearchFilters = {},

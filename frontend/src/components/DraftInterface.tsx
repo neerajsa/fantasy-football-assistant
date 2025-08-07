@@ -122,15 +122,17 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
     setMakingPick(true);
     
     try {
+      // Step 1: Make the user's pick and wait for completion
       await draftApi.makePickForTeam(
         draftId,
         draftState.current_team.id,
         pickRequest
       );
 
-      // Refresh draft state
+      // Step 2: Refresh draft state to reflect user's pick immediately
       await fetchDraftState();
       
+      // Step 3: Show success toast for user's pick
       toast({
         title: 'Pick successful!',
         description: `You drafted ${pickRequest.player_name}`,
@@ -139,7 +141,13 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
         isClosable: true,
       });
 
+      // Step 4: Close modal
       onClose();
+
+      // Step 5: Start cell-by-cell progression for any subsequent AI picks
+      // This processes one pick at a time with proper visual progression
+      processNextPick();
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to make pick';
       
@@ -170,6 +178,9 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
         duration: 3000,
         isClosable: true,
       });
+
+      // Start cell-by-cell progression if first pick is AI
+      processNextPick();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to start draft';
       
@@ -199,6 +210,54 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
     return draftState.draft_session.picks.some(pick => 
       pick.player_id === player.id && pick.picked_at !== null
     );
+  };
+
+  // Process next pick in sequence - handles both user and AI picks
+  const processNextPick = async () => {
+    if (!draftState) return;
+
+    // Refresh draft state to get current status
+    await fetchDraftState();
+    
+    // Get updated draft state
+    const updatedState = await draftApi.getDraftState(draftId);
+    
+    // Check if draft is complete or not in progress
+    if (updatedState.draft_session.status !== DraftStatus.IN_PROGRESS) {
+      return;
+    }
+
+    const currentTeam = updatedState.current_team;
+    
+    // If it's a user team, stop processing and wait for user input
+    if (currentTeam.is_user) {
+      return;
+    }
+
+    // If it's an AI team, make the AI pick
+    try {
+      // Add a small delay for visual effect
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Make single AI pick
+      await draftApi.makeAIPick(draftId);
+      
+      // Refresh state after AI pick
+      await fetchDraftState();
+      
+      // Recursively process the next pick
+      await processNextPick();
+    } catch (error) {
+      console.error('Error making AI pick:', error);
+      
+      toast({
+        title: 'AI Pick Error',
+        description: 'There was an issue with the AI pick. Please continue manually.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
   // Helper functions to get scoring-specific player data

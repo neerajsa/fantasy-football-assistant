@@ -4,6 +4,7 @@ from sqlalchemy import and_, desc
 from datetime import datetime
 import uuid
 import random
+import time
 
 from ..database.models import DraftSession, DraftTeam, DraftPick, CustomRankingPlayer
 from ..schemas.draft import (
@@ -424,6 +425,10 @@ class DraftService:
                 ai_pick = self.make_ai_pick(draft_id, strategy)
                 ai_picks.append(ai_pick)
                 picks_made += 1
+                
+                # Add a 1-second delay between AI picks for better UX
+                # This allows the frontend to see picks loading sequentially
+                time.sleep(1)
             except Exception as e:
                 # Log error and stop processing to prevent infinite loops
                 print(f"Error making AI pick: {e}")
