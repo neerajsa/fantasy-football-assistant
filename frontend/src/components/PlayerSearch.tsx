@@ -155,15 +155,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
     if (!onMakePick || !currentUserTeamId) return;
 
     try {
-      await onMakePick({ player_id : player.id});
-      
-      toast({
-        title: 'Pick made!',
-        description: `Successfully drafted ${player.player_name}`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      await onMakePick({ player_id: player.id, player_name: player.player_name });
 
       // Refresh player list
       fetchPlayers();

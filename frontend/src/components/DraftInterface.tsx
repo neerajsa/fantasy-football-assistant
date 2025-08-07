@@ -133,7 +133,7 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
       
       toast({
         title: 'Pick successful!',
-        description: `You drafted ${selectedPlayer?.player_name}`,
+        description: `You drafted ${pickRequest.player_name}`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -191,6 +191,14 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
   // Check if it's user's turn
   const isUserTurn = (): boolean => {
     return draftState?.current_team.is_user || false;
+  };
+
+  // Check if a player is already drafted
+  const isPlayerDrafted = (player: Player): boolean => {
+    if (!draftState?.draft_session.picks) return false;
+    return draftState.draft_session.picks.some(pick => 
+      pick.player_id === player.id && pick.picked_at !== null
+    );
   };
 
   // Helper functions to get scoring-specific player data
@@ -428,8 +436,24 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
                   </CardBody>
                 </Card>
 
-                {/* Draft Action */}
-                {isUserTurn() && draft_session.status === DraftStatus.IN_PROGRESS && (
+                {/* Draft Action or Already Drafted Info */}
+                {isPlayerDrafted(selectedPlayer) ? (
+                  <Card>
+                    <CardBody>
+                      <VStack spacing={3}>
+                        <Text fontSize="lg" fontWeight="bold" color="gray.600">
+                          Player Already Drafted
+                        </Text>
+                        <Text fontSize="sm" color="gray.500" textAlign="center">
+                          This player has already been selected by another team.
+                        </Text>
+                        <Button variant="outline" onClick={onClose}>
+                          Close
+                        </Button>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                ) : isUserTurn() && draft_session.status === DraftStatus.IN_PROGRESS ? (
                   <Card>
                     <CardBody>
                       <VStack spacing={3}>
@@ -443,7 +467,7 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
                             size="lg"
                             isLoading={makingPick}
                             loadingText="Drafting..."
-                            onClick={() => handleMakePick({ player_id: selectedPlayer.id })}
+                            onClick={() => handleMakePick({ player_id: selectedPlayer.id, player_name: selectedPlayer.player_name })}
                           >
                             Draft {selectedPlayer.player_name}
                           </Button>
@@ -455,7 +479,7 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
                       </VStack>
                     </CardBody>
                   </Card>
-                )}
+                ) : null}
               </VStack>
             )}
           </ModalBody>

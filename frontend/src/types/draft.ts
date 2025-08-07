@@ -88,6 +88,7 @@ export interface DraftStateResponse {
 
 export interface MakePickRequest {
   player_id: string;
+  player_name: string;
 }
 
 export interface DraftBoardProps {

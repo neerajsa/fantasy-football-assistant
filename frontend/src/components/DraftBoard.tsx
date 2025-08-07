@@ -360,8 +360,8 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                             cell.is_current ? `${primaryColor}.400` : borderColor
                           }
                           borderRadius="md"
-                          cursor={cell.pick?.player_id ? 'pointer' : 'default'}
-                          onClick={() => cell.pick?.player && handlePlayerClick(cell.pick.player as Player)}
+                          cursor={cell.pick?.player_id && playersData[cell.pick.player_id] ? 'pointer' : 'default'}
+                          onClick={() => cell.pick?.player_id && playersData[cell.pick.player_id] && handlePlayerClick(playersData[cell.pick.player_id])}
                           transition="all 0.2s"
                           _hover={cell.pick?.player_id ? { transform: 'scale(1.02)', shadow: 'md' } : {}}
                         >
@@ -423,7 +423,7 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                   bg={index === 0 ? currentPickBg : completedPickBg}
                   borderRadius="md"
                   cursor="pointer"
-                  onClick={() => (pick.player as Player) && handlePlayerClick(pick.player as Player)}
+                  onClick={() => pick.player_id && playersData[pick.player_id] && handlePlayerClick(playersData[pick.player_id])}
                   _hover={{ transform: 'scale(1.01)', shadow: 'md' }}
                   transition="all 0.2s"
                   border="1px solid"
