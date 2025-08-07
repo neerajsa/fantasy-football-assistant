@@ -361,6 +361,7 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
             draftId={draftId}
             onPlayerSelect={handlePlayerSelect}
             refreshInterval={draft_session.status === DraftStatus.IN_PROGRESS ? 5000 : 0}
+            draftState={draftState}
           />
         </GridItem>
 

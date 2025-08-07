@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
 from datetime import datetime
 import uuid
+import random
 
 from ..database.models import DraftSession, DraftTeam, DraftPick, CustomRankingPlayer
 from ..schemas.draft import (
@@ -11,6 +12,7 @@ from ..schemas.draft import (
 )
 from .draft_engine import DraftEngine, DraftTurnLogic
 from .draft_validation import DraftValidator, DraftValidationError
+from .draft_ai import DraftAI, AIStrategy
 
 
 class DraftService:
@@ -19,6 +21,7 @@ class DraftService:
     def __init__(self, db: Session):
         self.db = db
         self.validator = DraftValidator(db)
+        self.ai = DraftAI(db)
     
     def create_draft_session(self, draft_data: DraftSessionCreate) -> DraftSession:
         """Create a new draft session with teams and initialize picks"""
@@ -110,7 +113,7 @@ class DraftService:
             raise ValueError(f"Draft session {draft_id} not found")
         
         if draft_session.status != DraftStatus.IN_PROGRESS:
-            raise ValueError(f"Draft is not in progress (status: {draft_session.status.value})")
+            raise ValueError(f"Draft is not in progress (status: {draft_session.status})")
         
         # Get the team making the pick
         team = self.db.query(DraftTeam).filter(
@@ -179,6 +182,7 @@ class DraftService:
                     team.current_roster[player_position] += 1
         
         # Advance to next pick
+        draft_engine = DraftEngine(draft_session)
         draft_complete = not draft_engine.advance_to_next_pick()
         
         if draft_complete:
@@ -188,7 +192,30 @@ class DraftService:
         self.db.commit()
         self.db.refresh(current_pick)
         
+        # After user pick, automatically process any consecutive AI turns
+        if not draft_complete and team.is_user:
+            try:
+                self.process_ai_turns(draft_id)
+            except Exception as e:
+                # Log error but don't fail the user's pick
+                print(f"Error processing AI turns after user pick: {e}")
+        
         return current_pick
+    
+    def get_player_from_player_id(
+        self, 
+        draft_id: uuid.UUID, 
+        player_id: uuid.UUID
+    ) -> CustomRankingPlayer:
+        """Get player from player id"""
+        player = self.db.query(CustomRankingPlayer).filter(
+            CustomRankingPlayer.id == player_id
+        ).first()
+        
+        if not player:
+            raise ValueError(f"Player {player_id} not found")
+        
+        return player
     
     def get_available_players(
         self, 
@@ -259,8 +286,53 @@ class DraftService:
                 "adp_ppr": float(player.adp_ppr) if player.adp_ppr else None
             })
         
+        # Create enhanced draft session dict with player data populated in picks
+        draft_session_dict = DraftSessionSchema.from_orm(draft_session).dict()
+        
+        # Populate player and team data for picks
+        if draft_session_dict.get('picks'):
+            # Get all unique player IDs and team IDs from picks
+            player_ids = [pick['player_id'] for pick in draft_session_dict['picks'] if pick.get('player_id')]
+            team_ids = [pick['team_id'] for pick in draft_session_dict['picks'] if pick.get('team_id')]
+            
+            # Batch fetch players and teams
+            players_map = {}
+            if player_ids:
+                players = self.db.query(CustomRankingPlayer).filter(
+                    CustomRankingPlayer.id.in_(player_ids)
+                ).all()
+                players_map = {str(p.id): {
+                    "id": str(p.id),
+                    "player_name": p.player_name,
+                    "position": p.position,
+                    "team": p.team
+                } for p in players}
+            
+            teams_map = {}
+            if team_ids:
+                teams = self.db.query(DraftTeam).filter(
+                    DraftTeam.id.in_(team_ids)
+                ).all()
+                teams_map = {str(t.id): {
+                    "id": str(t.id),
+                    "team_name": t.team_name,
+                    "is_user": t.is_user
+                } for t in teams}
+            
+            # Enhance picks with player and team data
+            for pick in draft_session_dict['picks']:
+                if pick.get('player_id') and str(pick['player_id']) in players_map:
+                    pick['player'] = players_map[str(pick['player_id'])]
+                else:
+                    pick['player'] = None
+                    
+                if pick.get('team_id') and str(pick['team_id']) in teams_map:
+                    pick['team'] = teams_map[str(pick['team_id'])]
+                else:
+                    pick['team'] = None
+        
         return DraftStateResponse(
-            draft_session=DraftSessionSchema.from_orm(draft_session),
+            draft_session=draft_session_dict,
             current_team=current_team,
             available_players=available_players_dict,
             recent_picks=recent_picks
@@ -283,3 +355,94 @@ class DraftService:
             raise ValueError(f"Draft session {draft_id} not found")
         
         return self.validator.get_draft_integrity_report(draft_session)
+    
+    def make_ai_pick(self, draft_id: uuid.UUID, strategy: AIStrategy = AIStrategy.BALANCED) -> DraftPick:
+        """Make an AI pick for the current team on the clock"""
+        
+        # Get draft session
+        draft_session = self.get_draft_session(draft_id)
+        if not draft_session:
+            raise ValueError(f"Draft session {draft_id} not found")
+        
+        if draft_session.status != DraftStatus.IN_PROGRESS:
+            raise ValueError(f"Draft is not in progress (status: {draft_session.status})")
+        
+        # Get current team using draft engine
+        draft_engine = DraftEngine(draft_session)
+        current_team = draft_engine.get_current_team()
+        
+        if not current_team:
+            raise ValueError("No current team found")
+        
+        if current_team.is_user:
+            raise ValueError("Cannot make AI pick for user team")
+        
+        # Use AI to select player
+        selected_player_id = self.ai.make_ai_pick(draft_session, current_team, strategy)
+        
+        # Make the pick using existing logic
+        pick_request = MakePickRequest(player_id=selected_player_id)
+        return self.make_pick(draft_id, current_team.id, pick_request)
+    
+    def process_ai_turns(self, draft_id: uuid.UUID) -> List[DraftPick]:
+        """Process all consecutive AI turns until it's a human player's turn or draft is complete"""
+        
+        draft_session = self.get_draft_session(draft_id)
+        if not draft_session:
+            raise ValueError(f"Draft session {draft_id} not found")
+        
+        if draft_session.status != DraftStatus.IN_PROGRESS:
+            return []
+        
+        ai_picks = []
+        max_picks = 50  # Safety limit to prevent infinite loops
+        picks_made = 0
+        
+        while picks_made < max_picks:
+            # Refresh draft session to get latest state
+            self.db.refresh(draft_session)
+            
+            if draft_session.status != DraftStatus.IN_PROGRESS:
+                break
+            
+            # Get current team
+            draft_engine = DraftEngine(draft_session)
+            current_team = draft_engine.get_current_team()
+            
+            if not current_team:
+                break
+            
+            # If it's a user team, stop processing
+            if current_team.is_user:
+                break
+            
+            # Make AI pick with slight randomization of strategy
+            strategies = [AIStrategy.BALANCED, AIStrategy.BEST_PLAYER_AVAILABLE, AIStrategy.POSITIONAL_NEED]
+            strategy = random.choice(strategies)
+            
+            try:
+                ai_pick = self.make_ai_pick(draft_id, strategy)
+                ai_picks.append(ai_pick)
+                picks_made += 1
+            except Exception as e:
+                # Log error and stop processing to prevent infinite loops
+                print(f"Error making AI pick: {e}")
+                break
+        
+        return ai_picks
+    
+    def get_pick_recommendations(self, draft_id: uuid.UUID, team_id: uuid.UUID, num_recommendations: int = 5) -> List[Dict[str, Any]]:
+        """Get AI-powered pick recommendations for a team"""
+        
+        draft_session = self.get_draft_session(draft_id)
+        if not draft_session:
+            raise ValueError(f"Draft session {draft_id} not found")
+        
+        team = self.db.query(DraftTeam).filter(
+            and_(DraftTeam.id == team_id, DraftTeam.draft_session_id == draft_id)
+        ).first()
+        
+        if not team:
+            raise ValueError(f"Team {team_id} not found in draft {draft_id}")
+        
+        return self.ai.get_pick_recommendations(draft_session, team, num_recommendations)

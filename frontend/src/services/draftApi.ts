@@ -76,6 +76,13 @@ class DraftApiService {
     });
   }
 
+  async getPlayerFromPick(
+    draftId: string,
+    pick: DraftPick
+  ): Promise<Player> {
+    return this.request<Player>(`/api/draft/${draftId}/player/${pick.player_id}`);
+  }
+
   async getAvailablePlayers(
     draftId: string, 
     filters: PlayerSearchFilters = {},

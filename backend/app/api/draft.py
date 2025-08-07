@@ -129,6 +129,22 @@ async def make_draft_pick(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/{draft_id}/player/{player_id}", summary="Get player from player id")
+async def get_player_from_player_id(
+    draft_id: uuid.UUID,
+    player_id: uuid.UUID,
+    draft_service: DraftService = Depends(get_draft_service)
+):
+    """Get player from player id"""
+    try:
+        player = draft_service.get_player_from_player_id(draft_id, player_id)
+        return player
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{draft_id}/available-players", summary="Get available players")
 async def get_available_players(
     draft_id: uuid.UUID,
@@ -217,6 +233,90 @@ async def get_draft_validation_report(
     try:
         report = draft_service.get_draft_validation_report(draft_id)
         return report
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{draft_id}/ai-pick", summary="Make AI pick for current team")
+async def make_ai_pick(
+    draft_id: uuid.UUID,
+    draft_service: DraftService = Depends(get_draft_service)
+):
+    """Make an AI pick for the current team on the clock (for testing/manual AI advancement)"""
+    try:
+        pick = draft_service.make_ai_pick(draft_id)
+        
+        # Convert to dict format for response
+        return {
+            "id": str(pick.id),
+            "draft_session_id": str(pick.draft_session_id),
+            "team_id": str(pick.team_id),
+            "player_id": str(pick.player_id) if pick.player_id else None,
+            "round_number": pick.round_number,
+            "pick_number": pick.pick_number,
+            "team_pick_number": pick.team_pick_number,
+            "picked_at": pick.picked_at.isoformat() if pick.picked_at else None,
+            "pick_time_seconds": pick.pick_time_seconds
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{draft_id}/process-ai-turns", summary="Process all consecutive AI turns")
+async def process_ai_turns(
+    draft_id: uuid.UUID,
+    draft_service: DraftService = Depends(get_draft_service)
+):
+    """Process all consecutive AI team turns until it's a human player's turn"""
+    try:
+        ai_picks = draft_service.process_ai_turns(draft_id)
+        
+        # Convert picks to dict format for response
+        picks_dict = []
+        for pick in ai_picks:
+            picks_dict.append({
+                "id": str(pick.id),
+                "draft_session_id": str(pick.draft_session_id),
+                "team_id": str(pick.team_id),
+                "player_id": str(pick.player_id) if pick.player_id else None,
+                "round_number": pick.round_number,
+                "pick_number": pick.pick_number,
+                "team_pick_number": pick.team_pick_number,
+                "picked_at": pick.picked_at.isoformat() if pick.picked_at else None,
+                "pick_time_seconds": pick.pick_time_seconds
+            })
+        
+        return {
+            "ai_picks": picks_dict,
+            "total_picks_made": len(ai_picks)
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{draft_id}/teams/{team_id}/recommendations", summary="Get pick recommendations for team")
+async def get_pick_recommendations(
+    draft_id: uuid.UUID,
+    team_id: uuid.UUID,
+    num_recommendations: int = Query(5, ge=1, le=10, description="Number of recommendations to return"),
+    draft_service: DraftService = Depends(get_draft_service)
+):
+    """Get AI-powered pick recommendations for a specific team"""
+    try:
+        recommendations = draft_service.get_pick_recommendations(draft_id, team_id, num_recommendations)
+        
+        return {
+            "recommendations": recommendations,
+            "total": len(recommendations),
+            "draft_id": str(draft_id),
+            "team_id": str(team_id)
+        }
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

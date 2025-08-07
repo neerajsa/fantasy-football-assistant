@@ -29,16 +29,22 @@ interface DraftBoardProps {
   draftId: string;
   onPlayerSelect?: (player: Player) => void;
   refreshInterval?: number;
+  draftState?: DraftStateResponse | null;
 }
 
 const DraftBoard: React.FC<DraftBoardProps> = ({ 
   draftId, 
   onPlayerSelect,
-  refreshInterval = 5000 
+  refreshInterval = 5000,
+  draftState: propDraftState = null
 }) => {
-  const [draftState, setDraftState] = useState<DraftStateResponse | null>(null);
+  const [internalDraftState, setInternalDraftState] = useState<DraftStateResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [playersData, setPlayersData] = useState<Record<string, Player>>({});
+  
+  // Use prop data if available, otherwise use internal state
+  const draftState = propDraftState || internalDraftState;
 
   const toast = useToast();
   
@@ -52,40 +58,56 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
   const currentPickBg = useColorModeValue('purple.100', 'purple.900');
   const userTeamBg = useColorModeValue('teal.50', 'teal.900');
   const completedPickBg = useColorModeValue('gray.50', 'gray.700');
+  
+  // Position-based background colors (matches PlayerRow position badges)
+  const positionColors = {
+    'QB': useColorModeValue('red.50', 'red.900'),
+    'RB': useColorModeValue('green.50', 'green.900'),
+    'WR': useColorModeValue('blue.50', 'blue.900'),
+    'TE': useColorModeValue('purple.50', 'purple.900'),
+    'K': useColorModeValue('orange.50', 'orange.900'),
+    'DST': useColorModeValue('gray.50', 'gray.700')
+  };
+
+  // Get position-based background color
+  const getPositionBackgroundColor = (position: string): string => {
+    return positionColors[position as keyof typeof positionColors] || positionColors['DST'];
+  };
 
   // Fetch draft state
   const fetchDraftState = useCallback(async () => {
     try {
       const state = await draftApi.getDraftState(draftId);
-      setDraftState(state);
+      setInternalDraftState(state);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch draft state';
       setError(errorMessage);
       
-      if (!draftState) {
-        // Only show toast if we don't have existing data
-        toast({
-          title: 'Error loading draft',
-          description: errorMessage,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
-      }
+      toast({
+        title: 'Error loading draft',
+        description: errorMessage,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
-  }, [draftId, draftState, toast]);
+  }, [draftId, toast]);
 
-  // Initial load
+  // Initial load - only if no prop data provided
   useEffect(() => {
-    fetchDraftState();
-  }, [fetchDraftState]);
+    if (!propDraftState) {
+      fetchDraftState();
+    } else {
+      setLoading(false);
+    }
+  }, [propDraftState, fetchDraftState]);
 
-  // Auto-refresh for live updates
+  // Auto-refresh for live updates - only if no prop data provided
   useEffect(() => {
-    if (!refreshInterval || draftState?.draft_session.status !== DraftStatus.IN_PROGRESS) {
+    if (propDraftState || !refreshInterval || draftState?.draft_session.status !== DraftStatus.IN_PROGRESS) {
       return;
     }
 
@@ -94,7 +116,51 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
     }, refreshInterval);
 
     return () => clearInterval(interval);
-  }, [fetchDraftState, refreshInterval, draftState?.draft_session.status]);
+  }, [propDraftState, fetchDraftState, refreshInterval, draftState?.draft_session.status]);
+
+  // Fetch player data for picks that have player_id but no player info
+  useEffect(() => {
+    if (!draftState?.draft_session.picks) return;
+
+    const fetchPlayerData = async () => {
+      const picksNeedingPlayerData = draftState.draft_session.picks?.filter(
+        pick => pick.player_id && !playersData[pick.player_id]
+      ) || [];
+
+      if (picksNeedingPlayerData.length === 0) return;
+
+      // Fetch player data for all picks that need it
+      const playerPromises = picksNeedingPlayerData.map(pick =>
+        draftApi.getPlayerFromPick(draftId, pick)
+          .then(player => ({ pickId: pick.id, player }))
+          .catch(err => {
+            console.error(`Failed to fetch player data for pick ${pick.id}:`, err);
+            return null;
+          })
+      );
+
+      try {
+        const playerResults = await Promise.all(playerPromises);
+        
+        // Update playersData state with fetched data
+        const newPlayersData = { ...playersData };
+        playerResults.forEach(result => {
+          if (result) {
+            const pick = picksNeedingPlayerData.find(p => p.id === result.pickId);
+            if (pick?.player_id) {
+              newPlayersData[pick.player_id] = result.player;
+            }
+          }
+        });
+
+        setPlayersData(newPlayersData);
+      } catch (err) {
+        console.error('Error fetching player data:', err);
+      }
+    };
+
+    fetchPlayerData();
+  }, [draftState?.draft_session.picks, playersData, draftId]);
 
   // Generate draft board cells
   const generateDraftBoard = (session: DraftSession): DraftBoardCell[][] => {
@@ -276,7 +342,7 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                     {round.map((cell, cellIndex) => (
                       <Tooltip
                         key={cellIndex}
-                        label={`Round ${cell.round}, Pick ${cell.pick_number}${cell.pick?.player ? ` - ${cell.pick.player?.player_name || 'Unknown Player'}` : ''}`}
+                        label={`Round ${cell.round}, Pick ${cell.pick_number}${cell.pick?.player_id && playersData[cell.pick.player_id] ? ` - ${playersData[cell.pick.player_id].player_name}` : ''}`}
                         hasArrow
                       >
                         <Box
@@ -284,7 +350,9 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                           p={2}
                           bg={
                             cell.is_current ? currentPickBg :
-                            cell.pick?.player_id ? completedPickBg :
+                            cell.pick?.player_id && playersData[cell.pick.player_id] 
+                              ? getPositionBackgroundColor(playersData[cell.pick.player_id].position)
+                              : cell.pick?.player_id ? completedPickBg :
                             cell.is_user_team ? userTeamBg : 'transparent'
                           }
                           border="1px solid"
@@ -305,13 +373,13 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                             {cell.pick?.player_id ? (
                               <>
                                 <Text fontSize="xs" fontWeight="bold" textAlign="center" noOfLines={2}>
-                                  {(cell.pick.player as any)?.player_name || 'Unknown'}
+                                  {playersData[cell.pick.player_id]?.player_name || 'Loading...'}
                                 </Text>
                                 <Text fontSize="xs" color="gray.600">
-                                  {(cell.pick.player as any)?.position}
+                                  {playersData[cell.pick.player_id]?.position || ''}
                                 </Text>
                                 <Text fontSize="xs" color="gray.500">
-                                  {(cell.pick.player as any)?.team}
+                                  {playersData[cell.pick.player_id]?.team || ''}
                                 </Text>
                               </>
                             ) : cell.is_current ? (
@@ -364,10 +432,10 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                   <HStack justify="space-between">
                     <VStack align="start" spacing={0}>
                       <Text fontWeight="bold">
-                        {(pick.player as any)?.player_name || 'Unknown Player'}
+                        {pick.player_id && playersData[pick.player_id] ? playersData[pick.player_id].player_name : 'Loading...'}
                       </Text>
                       <Text fontSize="sm" color="gray.600">
-                        {(pick.player as any)?.position} • {(pick.player as any)?.team}
+                        {pick.player_id && playersData[pick.player_id] ? `${playersData[pick.player_id].position} • ${playersData[pick.player_id].team}` : ''}
                       </Text>
                     </VStack>
                     <VStack align="end" spacing={0}>
