@@ -266,39 +266,6 @@ async def make_ai_pick(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/{draft_id}/process-ai-turns", summary="Process all consecutive AI turns")
-async def process_ai_turns(
-    draft_id: uuid.UUID,
-    draft_service: DraftService = Depends(get_draft_service)
-):
-    """Process all consecutive AI team turns until it's a human player's turn"""
-    try:
-        ai_picks = draft_service.process_ai_turns(draft_id)
-        
-        # Convert picks to dict format for response
-        picks_dict = []
-        for pick in ai_picks:
-            picks_dict.append({
-                "id": str(pick.id),
-                "draft_session_id": str(pick.draft_session_id),
-                "team_id": str(pick.team_id),
-                "player_id": str(pick.player_id) if pick.player_id else None,
-                "round_number": pick.round_number,
-                "pick_number": pick.pick_number,
-                "team_pick_number": pick.team_pick_number,
-                "picked_at": pick.picked_at.isoformat() if pick.picked_at else None,
-                "pick_time_seconds": pick.pick_time_seconds
-            })
-        
-        return {
-            "ai_picks": picks_dict,
-            "total_picks_made": len(ai_picks)
-        }
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/{draft_id}/teams/{team_id}/recommendations", summary="Get pick recommendations for team")
 async def get_pick_recommendations(

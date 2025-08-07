@@ -4,7 +4,6 @@ from sqlalchemy import and_, desc
 from datetime import datetime
 import uuid
 import random
-import time
 
 from ..database.models import DraftSession, DraftTeam, DraftPick, CustomRankingPlayer
 from ..schemas.draft import (
@@ -193,14 +192,6 @@ class DraftService:
         self.db.commit()
         self.db.refresh(current_pick)
         
-        # After user pick, automatically process any consecutive AI turns
-        if not draft_complete and team.is_user:
-            try:
-                self.process_ai_turns(draft_id)
-            except Exception as e:
-                # Log error but don't fail the user's pick
-                print(f"Error processing AI turns after user pick: {e}")
-        
         return current_pick
     
     def get_player_from_player_id(
@@ -384,57 +375,6 @@ class DraftService:
         # Make the pick using existing logic
         pick_request = MakePickRequest(player_id=selected_player_id)
         return self.make_pick(draft_id, current_team.id, pick_request)
-    
-    def process_ai_turns(self, draft_id: uuid.UUID) -> List[DraftPick]:
-        """Process all consecutive AI turns until it's a human player's turn or draft is complete"""
-        
-        draft_session = self.get_draft_session(draft_id)
-        if not draft_session:
-            raise ValueError(f"Draft session {draft_id} not found")
-        
-        if draft_session.status != DraftStatus.IN_PROGRESS:
-            return []
-        
-        ai_picks = []
-        max_picks = 50  # Safety limit to prevent infinite loops
-        picks_made = 0
-        
-        while picks_made < max_picks:
-            # Refresh draft session to get latest state
-            self.db.refresh(draft_session)
-            
-            if draft_session.status != DraftStatus.IN_PROGRESS:
-                break
-            
-            # Get current team
-            draft_engine = DraftEngine(draft_session)
-            current_team = draft_engine.get_current_team()
-            
-            if not current_team:
-                break
-            
-            # If it's a user team, stop processing
-            if current_team.is_user:
-                break
-            
-            # Make AI pick with slight randomization of strategy
-            strategies = [AIStrategy.BALANCED, AIStrategy.BEST_PLAYER_AVAILABLE, AIStrategy.POSITIONAL_NEED]
-            strategy = random.choice(strategies)
-            
-            try:
-                ai_pick = self.make_ai_pick(draft_id, strategy)
-                ai_picks.append(ai_pick)
-                picks_made += 1
-                
-                # Add a 1-second delay between AI picks for better UX
-                # This allows the frontend to see picks loading sequentially
-                time.sleep(1)
-            except Exception as e:
-                # Log error and stop processing to prevent infinite loops
-                print(f"Error making AI pick: {e}")
-                break
-        
-        return ai_picks
     
     def get_pick_recommendations(self, draft_id: uuid.UUID, team_id: uuid.UUID, num_recommendations: int = 5) -> List[Dict[str, Any]]:
         """Get AI-powered pick recommendations for a team"""
