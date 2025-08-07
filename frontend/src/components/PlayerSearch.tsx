@@ -47,6 +47,7 @@ interface PlayerSearchProps {
   canMakePick?: boolean;
   currentUserTeamId?: string;
   scoringType?: 'standard' | 'ppr' | 'half_ppr';
+  refreshTrigger?: number;
 }
 
 const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST'];
@@ -57,7 +58,8 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
   onMakePick,
   canMakePick = false,
   currentUserTeamId,
-  scoringType = 'ppr'
+  scoringType = 'ppr',
+  refreshTrigger = 0
 }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,6 +115,13 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
   useEffect(() => {
     fetchPlayers();
   }, [fetchPlayers]);
+
+  // Refresh when trigger changes (when draft state updates)
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      fetchPlayers();
+    }
+  }, [refreshTrigger, fetchPlayers]);
 
   // Filter and sort players
   const filteredAndSortedPlayers = useMemo(() => {

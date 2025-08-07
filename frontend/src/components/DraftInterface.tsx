@@ -48,6 +48,7 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [makingPick, setMakingPick] = useState(false);
+  const [playerSearchRefreshTrigger, setPlayerSearchRefreshTrigger] = useState(0);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -98,6 +99,13 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
 
     return () => clearInterval(interval);
   }, [fetchDraftState, draftState?.draft_session.status]);
+
+  // Trigger PlayerSearch refresh when draft state changes
+  useEffect(() => {
+    if (draftState) {
+      setPlayerSearchRefreshTrigger(prev => prev + 1);
+    }
+  }, [draftState?.draft_session.current_pick]);
 
   // Handle player selection
   const handlePlayerSelect = (player: Player) => {
@@ -374,6 +382,7 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
             canMakePick={isUserTurn() && draft_session.status === DraftStatus.IN_PROGRESS}
             currentUserTeamId={userTeam?.id}
             scoringType={draft_session.scoring_type}
+            refreshTrigger={playerSearchRefreshTrigger}
           />
         </GridItem>
       </Grid>
