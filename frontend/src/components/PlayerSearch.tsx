@@ -146,7 +146,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
     if (!onMakePick || !currentUserTeamId) return;
 
     try {
-      await onMakePick({ player_id: player.id });
+      await onMakePick({ player_id : player.id});
       
       toast({
         title: 'Pick made!',

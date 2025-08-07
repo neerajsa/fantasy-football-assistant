@@ -35,7 +35,7 @@ const ModernDraftConfiguration: React.FC = () => {
   const [config, setConfig] = useState<DraftConfigurationCreate>({
     scoring_type: ScoringType.HALF_PPR,
     draft_type: DraftType.SNAKE,
-    draft_position: null,
+    draft_position: 1,
     num_teams: 12,
     roster_positions: DEFAULT_ROSTER
   });
@@ -54,7 +54,7 @@ const ModernDraftConfiguration: React.FC = () => {
     
     try {
       // Generate teams with user at configured position
-      const userPosition = config.draft_position ? config.draft_position - 1 : Math.floor(Math.random() * config.num_teams);
+      const userPosition = config.draft_position - 1;
       const teams: DraftTeamCreate[] = [];
       
       for (let i = 0; i < config.num_teams; i++) {

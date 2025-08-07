@@ -68,7 +68,7 @@ const ConfigurationSummary: React.FC<ConfigurationSummaryProps> = ({
               <Flex justify="space-between">
                 <Text color="gray.600">Draft Position:</Text>
                 <Text fontWeight="medium">
-                  {config.draft_position ? `${config.draft_position}th` : '1st'}
+                  {config.draft_position}{config.draft_position === 1 ? 'st' : config.draft_position === 2 ? 'nd' : config.draft_position === 3 ? 'rd' : 'th'}
                 </Text>
               </Flex>
               <Flex justify="space-between">

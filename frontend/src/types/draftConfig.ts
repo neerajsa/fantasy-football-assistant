@@ -17,7 +17,7 @@ export interface RosterPositions {
 export interface DraftConfigurationCreate {
   scoring_type: ScoringType;
   draft_type: DraftType;
-  draft_position?: number | null;
+  draft_position: number;
   num_teams: number;
   roster_positions: RosterPositions;
 }
