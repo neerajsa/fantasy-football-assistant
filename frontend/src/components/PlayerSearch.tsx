@@ -77,8 +77,6 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
   const [sortBy, setSortBy] = useState<'rank' | 'adp' | 'name' | 'position'>('rank');
   const [sortAscending, setSortAscending] = useState(true);
   
-  // Pagination state
-  const [displayLimit, setDisplayLimit] = useState(50);
 
   const toast = useToast();
 
@@ -127,8 +125,8 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
   const filteredAndSortedPlayers = useMemo(() => {
     let filtered = draftApi.filterPlayers(players, filters);
     filtered = draftApi.sortPlayers(filtered, sortBy, sortAscending, scoringType);
-    return filtered.slice(0, displayLimit);
-  }, [players, filters, sortBy, sortAscending, displayLimit, scoringType]);
+    return filtered;
+  }, [players, filters, sortBy, sortAscending, scoringType]);
 
   // Handle filter changes
   const handleFilterChange = (key: keyof PlayerSearchFilters, value: any) => {
@@ -280,31 +278,6 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
             </Button>
           </HStack>
 
-          {/* Display Limit */}
-          <HStack w="full" justify="space-between">
-            <HStack>
-              <Text fontSize="sm" color="gray.600">
-                Show:
-              </Text>
-              <Select
-                size="sm"
-                w="100px"
-                value={displayLimit}
-                onChange={(e) => setDisplayLimit(parseInt(e.target.value))}
-              >
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-                <option value={200}>200</option>
-              </Select>
-            </HStack>
-
-            {canMakePick && (
-              <Badge colorScheme={accentColor} p={2}>
-                Click to draft
-              </Badge>
-            )}
-          </HStack>
         </VStack>
 
         <Divider mb={4} />
@@ -374,8 +347,6 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
                 >
                   ADP {sortBy === 'adp' && (sortAscending ? '↑' : '↓')}
                 </Th>
-                <Th fontSize="xs">Points</Th>
-                {canMakePick && <Th fontSize="xs">Action</Th>}
               </Tr>
             </Thead>
             <Tbody>

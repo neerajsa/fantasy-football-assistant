@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Tr,
   Td,
   Badge,
   Button,
-  Text
+  Text,
+  Box
 } from '@chakra-ui/react';
 import { Player } from '../types/draft';
 
@@ -25,6 +26,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
   onMakePick,
   hoverBg = 'gray.50'
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
   // Get ADP value based on scoring type
   const getAdpValue = (player: Player): number | undefined => {
     switch (scoringType) {
@@ -73,10 +75,13 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
 
   return (
     <Tr
+      position="relative"
       cursor="pointer"
       onClick={() => onPlayerSelect(player)}
       _hover={{ bg: hoverBg }}
       transition="all 0.2s"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <Td>
         <Badge
@@ -118,16 +123,28 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
           {adpValue?.toFixed(1) || '—'}
         </Text>
       </Td>
-      <Td>
-        <Text fontSize="sm">
-          {previousYearPoints?.toFixed(1) || '—'}
-        </Text>
-      </Td>
-      {canMakePick && (
-        <Td>
+      
+      {/* Hover Overlay with Draft Button over Rank */}
+      {canMakePick && isHovered && (
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          bottom="0"
+          width="80px"
+          bg="rgba(0, 0, 0, 0.1)"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          zIndex={10}
+          borderRadius="md"
+        >
           <Button
             size="xs"
+            fontSize="xs"
             colorScheme="green"
+            shadow="lg"
+            _hover={{ transform: 'scale(1.05)' }}
             onClick={(e) => {
               e.stopPropagation();
               onMakePick && onMakePick(player);
@@ -135,7 +152,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
           >
             Draft
           </Button>
-        </Td>
+        </Box>
       )}
     </Tr>
   );
