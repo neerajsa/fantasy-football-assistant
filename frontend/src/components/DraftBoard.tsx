@@ -24,6 +24,7 @@ import {
   Player
 } from '../types/draft';
 import { draftApi } from '../services/draftApi';
+import { useDraftPlayerData, getPlayerFromData } from '../utils/draftPlayerData';
 
 interface DraftBoardProps {
   draftId: string;
@@ -41,10 +42,12 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
   const [internalDraftState, setInternalDraftState] = useState<DraftStateResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [playersData, setPlayersData] = useState<Record<string, Player>>({});
   
   // Use prop data if available, otherwise use internal state
   const draftState = propDraftState || internalDraftState;
+  
+  // Use shared player data hook
+  const playersData = useDraftPlayerData(draftId, draftState);
 
   const toast = useToast();
   
@@ -118,49 +121,6 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
     return () => clearInterval(interval);
   }, [propDraftState, fetchDraftState, refreshInterval, draftState?.draft_session.status]);
 
-  // Fetch player data for picks that have player_id but no player info
-  useEffect(() => {
-    if (!draftState?.draft_session.picks) return;
-
-    const fetchPlayerData = async () => {
-      const picksNeedingPlayerData = draftState.draft_session.picks?.filter(
-        pick => pick.player_id && !playersData[pick.player_id]
-      ) || [];
-
-      if (picksNeedingPlayerData.length === 0) return;
-
-      // Fetch player data for all picks that need it
-      const playerPromises = picksNeedingPlayerData.map(pick =>
-        draftApi.getPlayerFromPick(draftId, pick)
-          .then(player => ({ pickId: pick.id, player }))
-          .catch(err => {
-            console.error(`Failed to fetch player data for pick ${pick.id}:`, err);
-            return null;
-          })
-      );
-
-      try {
-        const playerResults = await Promise.all(playerPromises);
-        
-        // Update playersData state with fetched data
-        const newPlayersData = { ...playersData };
-        playerResults.forEach(result => {
-          if (result) {
-            const pick = picksNeedingPlayerData.find(p => p.id === result.pickId);
-            if (pick?.player_id) {
-              newPlayersData[pick.player_id] = result.player;
-            }
-          }
-        });
-
-        setPlayersData(newPlayersData);
-      } catch (err) {
-        console.error('Error fetching player data:', err);
-      }
-    };
-
-    fetchPlayerData();
-  }, [draftState?.draft_session.picks, playersData, draftId]);
 
   // Generate draft board cells
   const generateDraftBoard = (session: DraftSession): DraftBoardCell[][] => {
@@ -342,7 +302,7 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                     {round.map((cell, cellIndex) => (
                       <Tooltip
                         key={cellIndex}
-                        label={`Round ${cell.round}, Pick ${cell.pick_number}${cell.pick?.player_id && playersData[cell.pick.player_id] ? ` - ${playersData[cell.pick.player_id].player_name}` : ''}`}
+                        label={`Round ${cell.round}, Pick ${cell.pick_number}${cell.pick?.player_id && getPlayerFromData(cell.pick.player_id, playersData) ? ` - ${getPlayerFromData(cell.pick.player_id, playersData)!.player_name}` : ''}`}
                         hasArrow
                       >
                         <Box
@@ -350,8 +310,8 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                           p={2}
                           bg={
                             cell.is_current ? currentPickBg :
-                            cell.pick?.player_id && playersData[cell.pick.player_id] 
-                              ? getPositionBackgroundColor(playersData[cell.pick.player_id].position)
+                            cell.pick?.player_id && getPlayerFromData(cell.pick.player_id, playersData)
+                              ? getPositionBackgroundColor(getPlayerFromData(cell.pick.player_id, playersData)!.position)
                               : cell.pick?.player_id ? completedPickBg :
                             cell.is_user_team ? userTeamBg : 'transparent'
                           }
@@ -360,8 +320,11 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                             cell.is_current ? `${primaryColor}.400` : borderColor
                           }
                           borderRadius="md"
-                          cursor={cell.pick?.player_id && playersData[cell.pick.player_id] ? 'pointer' : 'default'}
-                          onClick={() => cell.pick?.player_id && playersData[cell.pick.player_id] && handlePlayerClick(playersData[cell.pick.player_id])}
+                          cursor={cell.pick?.player_id && getPlayerFromData(cell.pick.player_id, playersData) ? 'pointer' : 'default'}
+                          onClick={() => {
+                            const player = getPlayerFromData(cell.pick?.player_id, playersData);
+                            if (player) handlePlayerClick(player);
+                          }}
                           transition="all 0.2s"
                           _hover={cell.pick?.player_id ? { transform: 'scale(1.02)', shadow: 'md' } : {}}
                         >
@@ -373,13 +336,13 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                             {cell.pick?.player_id ? (
                               <>
                                 <Text fontSize="xs" fontWeight="bold" textAlign="center" noOfLines={2}>
-                                  {playersData[cell.pick.player_id]?.player_name || 'Loading...'}
+                                  {getPlayerFromData(cell.pick.player_id, playersData)?.player_name || 'Loading...'}
                                 </Text>
                                 <Text fontSize="xs" color="gray.600">
-                                  {playersData[cell.pick.player_id]?.position || ''}
+                                  {getPlayerFromData(cell.pick.player_id, playersData)?.position || ''}
                                 </Text>
                                 <Text fontSize="xs" color="gray.500">
-                                  {playersData[cell.pick.player_id]?.team || ''}
+                                  {getPlayerFromData(cell.pick.player_id, playersData)?.team || ''}
                                 </Text>
                               </>
                             ) : cell.is_current ? (
@@ -423,7 +386,10 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                   bg={index === 0 ? currentPickBg : completedPickBg}
                   borderRadius="md"
                   cursor="pointer"
-                  onClick={() => pick.player_id && playersData[pick.player_id] && handlePlayerClick(playersData[pick.player_id])}
+                  onClick={() => {
+                    const player = getPlayerFromData(pick.player_id, playersData);
+                    if (player) handlePlayerClick(player);
+                  }}
                   _hover={{ transform: 'scale(1.01)', shadow: 'md' }}
                   transition="all 0.2s"
                   border="1px solid"
@@ -432,10 +398,10 @@ const DraftBoard: React.FC<DraftBoardProps> = ({
                   <HStack justify="space-between">
                     <VStack align="start" spacing={0}>
                       <Text fontWeight="bold">
-                        {pick.player_id && playersData[pick.player_id] ? playersData[pick.player_id].player_name : 'Loading...'}
+                        {getPlayerFromData(pick.player_id, playersData)?.player_name || 'Loading...'}
                       </Text>
                       <Text fontSize="sm" color="gray.600">
-                        {pick.player_id && playersData[pick.player_id] ? `${playersData[pick.player_id].position} • ${playersData[pick.player_id].team}` : ''}
+                        {pick.player_id && getPlayerFromData(pick.player_id, playersData) ? `${getPlayerFromData(pick.player_id, playersData)!.position} • ${getPlayerFromData(pick.player_id, playersData)!.team}` : ''}
                       </Text>
                     </VStack>
                     <VStack align="end" spacing={0}>
