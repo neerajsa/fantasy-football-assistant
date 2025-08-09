@@ -3,32 +3,17 @@ import {
   Box,
   Grid,
   GridItem,
-  VStack,
-  HStack,
   Text,
-  Card,
-  CardBody,
-  Badge,
-  Button,
   Alert,
   AlertIcon,
   useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
   useDisclosure,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatGroup,
-  useColorModeValue,
-  Heading
+  useColorModeValue
 } from '@chakra-ui/react';
 import DraftBoard from './DraftBoard';
 import DraftPanel from './DraftPanel';
+import DraftHeader from './DraftHeader';
+import PlayerDetailModal from './PlayerDetailModal';
 import {
   DraftStateResponse,
   Player,
@@ -37,7 +22,6 @@ import {
   DraftTeam
 } from '../types/draft';
 import { draftApi } from '../services/draftApi';
-import { getPlayerEcrRank, getPlayerAdp, getPlayerPreviousYearPoints } from '../utils/playerUtils';
 
 interface DraftInterfaceProps {
   draftId: string;
@@ -56,10 +40,6 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
 
   // Color scheme - consistent with configuration page
   const bgColor = useColorModeValue('gray.50', 'gray.900');
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const primaryColor = 'purple';
-  const accentColor = 'teal';
 
   // Fetch draft state
   const fetchDraftState = useCallback(async () => {
@@ -287,103 +267,14 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
 
   return (
     <Box bg={bgColor} minH="100vh" p={4}>
-      {/* Draft Status Header */}
-      <Card mb={6} bg={cardBg} shadow="sm" border="1px" borderColor={borderColor}>
-        <CardBody>
-          <Grid templateColumns="1fr auto 1fr" gap={6} alignItems="center">
-            {/* Draft Info */}
-            <VStack align="start" spacing={2}>
-              <HStack>
-                <Heading as="h1" size="xl" color={`${primaryColor}.600`} fontWeight="bold">
-                  Mock Draft
-                </Heading>
-                <Badge
-                  colorScheme={
-                    draft_session.status === DraftStatus.IN_PROGRESS ? 'green' :
-                    draft_session.status === DraftStatus.COMPLETED ? 'blue' : 'gray'
-                  }
-                  fontSize="sm"
-                >
-                  {draft_session.status.replace('_', ' ').toUpperCase()}
-                </Badge>
-              </HStack>
-              
-              <HStack spacing={4}>
-                <Badge colorScheme={primaryColor} size="sm">
-                  {draft_session.draft_type.toUpperCase()}
-                </Badge>
-                <Badge colorScheme={accentColor} size="sm">
-                  {draft_session.scoring_type.replace('_', ' ').toUpperCase()}
-                </Badge>
-                <Text color="gray.600" fontSize="sm">
-                  {draft_session.num_teams} teams
-                </Text>
-              </HStack>
-            </VStack>
-
-            {/* Current Pick Status */}
-            <VStack spacing={2}>
-              <Text fontSize="lg" textAlign="center" color="gray.600">
-                Round {draft_session.current_round} • Pick {draft_session.current_pick}
-              </Text>
-              
-              {draft_session.status === DraftStatus.IN_PROGRESS ? (
-                <VStack spacing={1}>
-                  <Text fontSize="xl" fontWeight="bold" textAlign="center">
-                    {current_team.team_name}
-                  </Text>
-                  {isUserTurn() ? (
-                    <Badge colorScheme={accentColor} fontSize="md" p={2}>
-                      YOUR TURN
-                    </Badge>
-                  ) : (
-                    <Badge colorScheme={primaryColor} fontSize="sm">
-                      On the clock
-                    </Badge>
-                  )}
-                </VStack>
-              ) : draft_session.status === DraftStatus.CREATED ? (
-                <Button 
-                  colorScheme={primaryColor} 
-                  onClick={handleStartDraft}
-                  _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                  transition="all 0.2s"
-                >
-                  Start Draft
-                </Button>
-              ) : (
-                <Badge colorScheme="gray" fontSize="md">
-                  Draft Complete
-                </Badge>
-              )}
-            </VStack>
-
-            {/* User Team Info */}
-            {userTeam && (
-              <VStack align="end" spacing={2}>
-                <Text fontSize="lg" fontWeight="semibold">
-                  {userTeam.team_name}
-                </Text>
-                
-                <StatGroup>
-                  <Stat textAlign="center">
-                    <StatLabel fontSize="xs">Picks Made</StatLabel>
-                    <StatNumber fontSize="md">
-                      {Object.values(userTeam.current_roster).reduce((sum, count) => sum + count, 0)}
-                    </StatNumber>
-                  </Stat>
-                  <Stat textAlign="center">
-                    <StatLabel fontSize="xs">Remaining</StatLabel>
-                    <StatNumber fontSize="md">
-                      {draft_session.total_rounds - Object.values(userTeam.current_roster).reduce((sum, count) => sum + count, 0)}
-                    </StatNumber>
-                  </Stat>
-                </StatGroup>
-              </VStack>
-            )}
-          </Grid>
-        </CardBody>
-      </Card>
+      {/* Draft Header */}
+      <DraftHeader
+        draftSession={draft_session}
+        currentTeam={current_team}
+        userTeam={userTeam}
+        isUserTurn={isUserTurn()}
+        onStartDraft={handleStartDraft}
+      />
 
       {/* Main Draft Interface */}
       <Grid 
@@ -418,95 +309,17 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
       </Grid>
 
       {/* Player Detail Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            {selectedPlayer?.player_name} - {selectedPlayer?.position} • {selectedPlayer?.team}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            {selectedPlayer && (
-              <VStack spacing={4} align="stretch">
-                {/* Player Stats */}
-                <Card>
-                  <CardBody>
-                    <Text fontSize="lg" fontWeight="bold" mb={3}>
-                      Player Rankings & Stats
-                    </Text>
-                    
-                    <Grid templateColumns="repeat(3, 1fr)" gap={4}>
-                      <Stat>
-                        <StatLabel>ECR Rank</StatLabel>
-                        <StatNumber>
-                          {getPlayerEcrRank(selectedPlayer, draft_session.scoring_type) || '—'}
-                        </StatNumber>
-                      </Stat>
-                      <Stat>
-                        <StatLabel>ADP</StatLabel>
-                        <StatNumber>
-                          {getPlayerAdp(selectedPlayer, draft_session.scoring_type)?.toFixed(1) || '—'}
-                        </StatNumber>
-                      </Stat>
-                      <Stat>
-                        <StatLabel>2023 Points</StatLabel>
-                        <StatNumber>
-                          {getPlayerPreviousYearPoints(selectedPlayer, draft_session.scoring_type)?.toFixed(1) || '—'}
-                        </StatNumber>
-                      </Stat>
-                    </Grid>
-                  </CardBody>
-                </Card>
-
-                {/* Draft Action or Already Drafted Info */}
-                {isPlayerDrafted(selectedPlayer) ? (
-                  <Card>
-                    <CardBody>
-                      <VStack spacing={3}>
-                        <Text fontSize="lg" fontWeight="bold" color="gray.600">
-                          Player Already Drafted
-                        </Text>
-                        <Text fontSize="sm" color="gray.500" textAlign="center">
-                          This player has already been selected by another team.
-                        </Text>
-                        <Button variant="outline" onClick={onClose}>
-                          Close
-                        </Button>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-                ) : isUserTurn() && draft_session.status === DraftStatus.IN_PROGRESS ? (
-                  <Card>
-                    <CardBody>
-                      <VStack spacing={3}>
-                        <Text fontSize="lg" fontWeight="bold">
-                          Draft This Player?
-                        </Text>
-                        
-                        <HStack spacing={3}>
-                          <Button
-                            colorScheme="green"
-                            size="lg"
-                            isLoading={makingPick}
-                            loadingText="Drafting..."
-                            onClick={() => handleMakePick({ player_id: selectedPlayer.id, player_name: selectedPlayer.player_name })}
-                          >
-                            Draft {selectedPlayer.player_name}
-                          </Button>
-                          
-                          <Button variant="outline" onClick={onClose}>
-                            Keep Looking
-                          </Button>
-                        </HStack>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-                ) : null}
-              </VStack>
-            )}
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      <PlayerDetailModal
+        isOpen={isOpen}
+        onClose={onClose}
+        selectedPlayer={selectedPlayer}
+        scoringType={draft_session.scoring_type}
+        draftStatus={draft_session.status}
+        isPlayerDrafted={isPlayerDrafted}
+        isUserTurn={isUserTurn()}
+        makingPick={makingPick}
+        onMakePick={handleMakePick}
+      />
     </Box>
   );
 };

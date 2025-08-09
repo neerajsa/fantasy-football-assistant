@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import PlayerRow from './PlayerRow';
+import PlayerFilters from './PlayerFilters';
 import {
   Box,
-  Input,
-  Select,
-  VStack,
-  HStack,
   Text,
   Table,
   Thead,
@@ -14,23 +11,14 @@ import {
   Th,
   Badge,
   Button,
-  InputGroup,
-  InputLeftElement,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
   Spinner,
   Alert,
   AlertIcon,
   useColorModeValue,
   Flex,
-  Divider,
   useToast,
   Heading
 } from '@chakra-ui/react';
-import { SearchIcon } from '@chakra-ui/icons';
 import {
   Player,
   PlayerSearchFilters,
@@ -48,7 +36,6 @@ interface PlayerSearchProps {
   refreshTrigger?: number;
 }
 
-const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DST'];
 
 const PlayerSearch: React.FC<PlayerSearchProps> = ({
   draftId,
@@ -199,84 +186,11 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
         </Badge>
       </Flex>
       {/* Search and Filter Controls */}
-      <VStack spacing={4} mb={4} px={4} flexShrink={0}>
-          {/* Search and Position Filter */}
-          <HStack w="full" spacing={3}>
-            <InputGroup flex={2}>
-              <InputLeftElement pointerEvents="none">
-                <SearchIcon color="gray.300" />
-              </InputLeftElement>
-              <Input
-                placeholder="Search players or teams..."
-                value={filters.search_text || ''}
-                onChange={(e) => handleFilterChange('search_text', e.target.value)}
-              />
-            </InputGroup>
-            
-            <Select
-              flex={1}
-              placeholder="All Positions"
-              value={filters.position || ''}
-              onChange={(e) => handleFilterChange('position', e.target.value || undefined)}
-            >
-              {POSITIONS.map(pos => (
-                <option key={pos} value={pos}>{pos}</option>
-              ))}
-            </Select>
-          </HStack>
-
-          {/* Rank Range Filter */}
-          <HStack w="full" spacing={3}>
-            <Text fontSize="sm" color="gray.600" minW="80px">
-              ECR Range:
-            </Text>
-            <NumberInput
-              size="sm"
-              min={1}
-              max={500}
-              value={filters.min_rank || ''}
-              onChange={(valueString) => 
-                handleFilterChange('min_rank', valueString ? parseInt(valueString) : undefined)
-              }
-            >
-              <NumberInputField placeholder="Min" />
-              <NumberInputStepper>
-                <NumberIncrementStepper />
-                <NumberDecrementStepper />
-              </NumberInputStepper>
-            </NumberInput>
-            
-            <Text>to</Text>
-            
-            <NumberInput
-              size="sm"
-              min={1}
-              max={500}
-              value={filters.max_rank || ''}
-              onChange={(valueString) => 
-                handleFilterChange('max_rank', valueString ? parseInt(valueString) : undefined)
-              }
-            >
-              <NumberInputField placeholder="Max" />
-              <NumberInputStepper>
-                <NumberIncrementStepper />
-                <NumberDecrementStepper />
-              </NumberInputStepper>
-            </NumberInput>
-
-            <Button 
-              size="sm" 
-              variant="outline" 
-              colorScheme={primaryColor} 
-              onClick={clearFilters}
-            >
-              Clear
-            </Button>
-          </HStack>
-
-      </VStack>
-
-      <Divider mb={4} />
+      <PlayerFilters
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onClearFilters={clearFilters}
+      />
 
       {/* Error Alert */}
       {error && (
