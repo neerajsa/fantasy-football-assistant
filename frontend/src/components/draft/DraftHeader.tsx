@@ -8,8 +8,7 @@ import {
   CardBody,
   Badge,
   Button,
-  Heading,
-  Box
+  Heading
 } from '@chakra-ui/react';
 import { DraftStatus, DraftSession, DraftTeam } from '../../types/draft';
 import { useAppTheme } from '../../utils/theme';
@@ -19,13 +18,17 @@ interface DraftHeaderProps {
   currentTeam: DraftTeam;
   isUserTurn: boolean;
   onStartDraft: () => void;
+  isSkippingToUser?: boolean;
+  onSkipToUser?: () => void;
 }
 
 const DraftHeader: React.FC<DraftHeaderProps> = ({
   draftSession,
   currentTeam,
   isUserTurn,
-  onStartDraft
+  onStartDraft,
+  isSkippingToUser = false,
+  onSkipToUser
 }) => {
   const { colors } = useAppTheme();
 
@@ -100,8 +103,23 @@ const DraftHeader: React.FC<DraftHeaderProps> = ({
             )}
           </VStack>
 
-          {/* Placeholder for layout balance */}
-          <Box minW="200px" />
+          {/* Draft Controls */}
+          <VStack align="end" spacing={2} minW="200px">
+            {/* Skip to User Pick Button */}
+            {!isUserTurn && draftSession.status === DraftStatus.IN_PROGRESS && onSkipToUser && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                colorScheme={colors.primary}
+                onClick={onSkipToUser}
+                isDisabled={isSkippingToUser}
+                loadingText="Skipping..."
+                isLoading={isSkippingToUser}
+              >
+                {isSkippingToUser ? 'Skipping...' : 'Skip to User Pick'}
+              </Button>
+            )}
+          </VStack>
         </Grid>
       </CardBody>
     </Card>

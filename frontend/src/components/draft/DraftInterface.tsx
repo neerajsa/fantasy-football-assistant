@@ -34,6 +34,7 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [makingPick, setMakingPick] = useState(false);
   const [playerSearchRefreshTrigger, setPlayerSearchRefreshTrigger] = useState(0);
+  const [isSkippingToUser, setIsSkippingToUser] = useState(false);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -175,6 +176,19 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
     }
   };
 
+  // Handle skip to user pick
+  const handleSkipToUser = () => {
+    setIsSkippingToUser(true);
+    
+    toast({
+      title: 'Skipping to your pick',
+      description: 'Accelerating AI picks until your turn',
+      status: 'info',
+      duration: 2000,
+      isClosable: true,
+    });
+  };
+
   // Get user team
   const getUserTeam = (): DraftTeam | undefined => {
     return draftState?.draft_session.teams?.find(team => team.is_user);
@@ -217,14 +231,22 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
 
     // If it's an AI team, make the AI pick
     try {
-      // Add a small delay for visual effect
-      await new Promise(resolve => setTimeout(resolve, 750));
+      // Add conditional delay - skip if rushing to user pick
+      if (!isSkippingToUser) {
+        await new Promise(resolve => setTimeout(resolve, 750));
+      }
       
       // Make single AI pick
       await draftApi.makeAIPick(draftId);
       
       // Refresh state after AI pick
       await fetchDraftState();
+      
+      // Check if next pick is user's turn and reset skip state if so
+      const nextState = await draftApi.getDraftState(draftId);
+      if (nextState.current_team.is_user) {
+        setIsSkippingToUser(false); // Reset skip state when reaching user
+      }
       
       // Recursively process the next pick
       await processNextPick();
@@ -273,6 +295,8 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
         currentTeam={current_team}
         isUserTurn={isUserTurn()}
         onStartDraft={handleStartDraft}
+        isSkippingToUser={isSkippingToUser}
+        onSkipToUser={handleSkipToUser}
       />
 
       {/* Main Draft Interface */}
