@@ -17,7 +17,7 @@ import {
   Divider,
   useColorModeValue
 } from '@chakra-ui/react';
-import { ScoringType, DraftType, DraftConfigurationCreate } from '../types/draftConfig';
+import { ScoringType, DraftType, DraftConfigurationCreate } from '../../types/draftConfig';
 
 interface LeagueSettingsProps {
   config: DraftConfigurationCreate;

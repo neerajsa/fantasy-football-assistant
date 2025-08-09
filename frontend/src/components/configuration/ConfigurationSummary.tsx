@@ -12,7 +12,7 @@ import {
   AlertIcon,
   useColorModeValue
 } from '@chakra-ui/react';
-import { DraftConfigurationCreate } from '../types/draftConfig';
+import { DraftConfigurationCreate } from '../../types/draftConfig';
 
 interface ConfigurationSummaryProps {
   config: DraftConfigurationCreate;

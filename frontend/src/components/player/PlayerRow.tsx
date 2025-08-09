@@ -7,7 +7,7 @@ import {
   Text,
   Box
 } from '@chakra-ui/react';
-import { Player } from '../types/draft';
+import { Player } from '../../types/draft';
 
 interface PlayerRowProps {
   player: Player;

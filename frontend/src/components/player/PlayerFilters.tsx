@@ -16,8 +16,8 @@ import {
   Divider
 } from '@chakra-ui/react';
 import { SearchIcon } from '@chakra-ui/icons';
-import { PlayerSearchFilters } from '../types/draft';
-import { useAppTheme } from '../utils/theme';
+import { PlayerSearchFilters } from '../../types/draft';
+import { useAppTheme } from '../../utils/theme';
 
 interface PlayerFiltersProps {
   filters: PlayerSearchFilters;

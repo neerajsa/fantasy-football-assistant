@@ -1,5 +1,5 @@
 import React from 'react';
-import ModernDraftConfiguration from './components/ModernDraftConfiguration';
+import ModernDraftConfiguration from './components/configuration/ModernDraftConfiguration';
 
 function App() {
   return <ModernDraftConfiguration />;

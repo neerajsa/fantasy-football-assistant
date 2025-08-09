@@ -9,13 +9,13 @@ import {
   TabPanel,
   useColorModeValue
 } from '@chakra-ui/react';
-import PlayerSearch from './PlayerSearch';
+import PlayerSearch from '../player/PlayerSearch';
 import YourTeam from './YourTeam';
 import {
   Player,
   MakePickRequest,
   DraftStateResponse
-} from '../types/draft';
+} from '../../types/draft';
 
 interface DraftPanelProps {
   draftId: string;

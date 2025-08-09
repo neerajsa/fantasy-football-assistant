@@ -14,8 +14,8 @@ import {
   StatGroup,
   Heading
 } from '@chakra-ui/react';
-import { DraftStatus, DraftSession, DraftTeam } from '../types/draft';
-import { useAppTheme } from '../utils/theme';
+import { DraftStatus, DraftSession, DraftTeam } from '../../types/draft';
+import { useAppTheme } from '../../utils/theme';
 
 interface DraftHeaderProps {
   draftSession: DraftSession;

@@ -22,9 +22,9 @@ import {
   DraftBoardCell,
   DraftStatus,
   Player
-} from '../types/draft';
-import { draftApi } from '../services/draftApi';
-import { useDraftPlayerData, getPlayerFromData } from '../utils/draftPlayerData';
+} from '../../types/draft';
+import { draftApi } from '../../services/draftApi';
+import { useDraftPlayerData, getPlayerFromData } from '../../utils/draftPlayerData';
 
 interface DraftBoardProps {
   draftId: string;

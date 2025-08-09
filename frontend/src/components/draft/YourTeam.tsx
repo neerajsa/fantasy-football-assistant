@@ -12,8 +12,8 @@ import {
 import {
   Player,
   DraftStateResponse
-} from '../types/draft';
-import { useDraftPlayerData, getUserDraftedPlayers } from '../utils/draftPlayerData';
+} from '../../types/draft';
+import { useDraftPlayerData, getUserDraftedPlayers } from '../../utils/draftPlayerData';
 
 interface YourTeamProps {
   draftId: string;

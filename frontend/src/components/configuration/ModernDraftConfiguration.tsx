@@ -11,10 +11,10 @@ import {
   Button
 } from '@chakra-ui/react';
 
-import { ScoringType, DraftType, DraftConfigurationCreate, RosterPositions } from '../types/draftConfig';
-import { draftApi } from '../services/draftApi';
-import { DraftSessionCreate, DraftTeamCreate } from '../types/draft';
-import DraftInterface from './DraftInterface';
+import { ScoringType, DraftType, DraftConfigurationCreate, RosterPositions } from '../../types/draftConfig';
+import { draftApi } from '../../services/draftApi';
+import { DraftSessionCreate, DraftTeamCreate } from '../../types/draft';
+import DraftInterface from '../draft/DraftInterface';
 import LeagueSettings from './LeagueSettings';
 import RosterConfiguration from './RosterConfiguration';
 import ConfigurationSummary from './ConfigurationSummary';

@@ -17,8 +17,8 @@ import {
   StatLabel,
   StatNumber
 } from '@chakra-ui/react';
-import { Player, DraftStatus, MakePickRequest } from '../types/draft';
-import { getPlayerEcrRank, getPlayerAdp, getPlayerPreviousYearPoints } from '../utils/playerUtils';
+import { Player, DraftStatus, MakePickRequest } from '../../types/draft';
+import { getPlayerEcrRank, getPlayerAdp, getPlayerPreviousYearPoints } from '../../utils/playerUtils';
 
 interface PlayerDetailModalProps {
   isOpen: boolean;

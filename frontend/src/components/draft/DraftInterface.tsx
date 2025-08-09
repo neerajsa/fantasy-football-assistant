@@ -13,15 +13,15 @@ import {
 import DraftBoard from './DraftBoard';
 import DraftPanel from './DraftPanel';
 import DraftHeader from './DraftHeader';
-import PlayerDetailModal from './PlayerDetailModal';
+import PlayerDetailModal from '../player/PlayerDetailModal';
 import {
   DraftStateResponse,
   Player,
   MakePickRequest,
   DraftStatus,
   DraftTeam
-} from '../types/draft';
-import { draftApi } from '../services/draftApi';
+} from '../../types/draft';
+import { draftApi } from '../../services/draftApi';
 
 interface DraftInterfaceProps {
   draftId: string;

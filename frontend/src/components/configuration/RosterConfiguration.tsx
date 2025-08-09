@@ -12,7 +12,7 @@ import {
   Select,
   useColorModeValue
 } from '@chakra-ui/react';
-import { RosterPositions } from '../types/draftConfig';
+import { RosterPositions } from '../../types/draftConfig';
 
 interface RosterConfigurationProps {
   rosterPositions: RosterPositions;

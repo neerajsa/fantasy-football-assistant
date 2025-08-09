@@ -23,8 +23,8 @@ import {
   Player,
   PlayerSearchFilters,
   MakePickRequest
-} from '../types/draft';
-import { draftApi } from '../services/draftApi';
+} from '../../types/draft';
+import { draftApi } from '../../services/draftApi';
 
 interface PlayerSearchProps {
   draftId: string;
