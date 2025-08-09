@@ -7,7 +7,13 @@ import {
   Card,
   CardBody,
   Badge,
-  useColorModeValue
+  useColorModeValue,
+  Flex,
+  Heading,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatGroup
 } from '@chakra-ui/react';
 import {
   Player,
@@ -39,7 +45,8 @@ const YourTeam: React.FC<YourTeamProps> = ({
   // Color scheme - consistent with existing app
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
-
+  const primaryColor = 'purple';
+  
   // Use shared player data hook (same pattern as DraftBoard)
   const playersData = useDraftPlayerData(draftId, draftState);
 
@@ -138,7 +145,45 @@ const YourTeam: React.FC<YourTeamProps> = ({
         },
       }}
     >
-      <VStack spacing={2} p={4} align="stretch">
+    <Flex justify="space-between" align="center" mb={4} px={4} pt={4} flexShrink={0}>
+      <Heading as="h2" size="lg" color={`${primaryColor}.600`} fontWeight="bold">
+        Your Team
+      </Heading>
+      
+      {/* Picks Statistics */}
+      {draftState?.draft_session && (() => {
+        const userTeam = draftState.draft_session.teams?.find(team => team.is_user);
+        if (!userTeam) return null;
+        
+        // Calculate actual players drafted (count of drafted players)
+        const playersDrafted = draftedPlayers.length;
+        
+        // Calculate total roster slots
+        const rosterPositions = draftState.draft_session.roster_positions || {};
+        const totalRosterSlots = Object.values(rosterPositions).reduce((sum, count) => sum + count, 0);
+        
+        // Calculate picks remaining as total slots minus players drafted
+        const picksRemaining = totalRosterSlots - playersDrafted;
+        
+        return (
+          <StatGroup>
+            <Stat textAlign="center" minW="120px">
+              <StatLabel fontSize="xs" whiteSpace="nowrap">Players Drafted</StatLabel>
+              <StatNumber fontSize="md">
+                {playersDrafted}
+              </StatNumber>
+            </Stat>
+            <Stat textAlign="center" minW="120px">
+              <StatLabel fontSize="xs" whiteSpace="nowrap">Picks Remaining</StatLabel>
+              <StatNumber fontSize="md">
+                {picksRemaining}
+              </StatNumber>
+            </Stat>
+          </StatGroup>
+        );
+      })()}
+    </Flex>
+      <VStack spacing={2} align="stretch">
         {/* Roster Slots */}
         {rosterSlots.map(slot => {
 

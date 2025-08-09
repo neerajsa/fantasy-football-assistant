@@ -8,11 +8,8 @@ import {
   CardBody,
   Badge,
   Button,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatGroup,
-  Heading
+  Heading,
+  Box
 } from '@chakra-ui/react';
 import { DraftStatus, DraftSession, DraftTeam } from '../../types/draft';
 import { useAppTheme } from '../../utils/theme';
@@ -20,7 +17,6 @@ import { useAppTheme } from '../../utils/theme';
 interface DraftHeaderProps {
   draftSession: DraftSession;
   currentTeam: DraftTeam;
-  userTeam?: DraftTeam;
   isUserTurn: boolean;
   onStartDraft: () => void;
 }
@@ -28,7 +24,6 @@ interface DraftHeaderProps {
 const DraftHeader: React.FC<DraftHeaderProps> = ({
   draftSession,
   currentTeam,
-  userTeam,
   isUserTurn,
   onStartDraft
 }) => {
@@ -105,29 +100,8 @@ const DraftHeader: React.FC<DraftHeaderProps> = ({
             )}
           </VStack>
 
-          {/* User Team Info */}
-          {userTeam && (
-            <VStack align="end" spacing={2}>
-              <Text fontSize="lg" fontWeight="semibold">
-                {userTeam.team_name}
-              </Text>
-              
-              <StatGroup>
-                <Stat textAlign="center">
-                  <StatLabel fontSize="xs">Picks Made</StatLabel>
-                  <StatNumber fontSize="md">
-                    {Object.values(userTeam.current_roster).reduce((sum, count) => sum + count, 0)}
-                  </StatNumber>
-                </Stat>
-                <Stat textAlign="center">
-                  <StatLabel fontSize="xs">Remaining</StatLabel>
-                  <StatNumber fontSize="md">
-                    {draftSession.total_rounds - Object.values(userTeam.current_roster).reduce((sum, count) => sum + count, 0)}
-                  </StatNumber>
-                </Stat>
-              </StatGroup>
-            </VStack>
-          )}
+          {/* Placeholder for layout balance */}
+          <Box minW="200px" />
         </Grid>
       </CardBody>
     </Card>
