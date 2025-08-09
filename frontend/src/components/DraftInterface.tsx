@@ -37,6 +37,7 @@ import {
   DraftTeam
 } from '../types/draft';
 import { draftApi } from '../services/draftApi';
+import { getPlayerEcrRank, getPlayerAdp, getPlayerPreviousYearPoints } from '../utils/playerUtils';
 
 interface DraftInterfaceProps {
   draftId: string;
@@ -260,45 +261,6 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
     }
   };
 
-  // Helper functions to get scoring-specific player data
-  const getPlayerEcrRank = (player: Player, scoringType: string): number | undefined => {
-    switch (scoringType) {
-      case 'standard':
-        return player.ecr_rank_standard;
-      case 'ppr':
-        return player.ecr_rank_ppr;
-      case 'half_ppr':
-        return player.ecr_rank_half_ppr;
-      default:
-        return player.ecr_rank_ppr;
-    }
-  };
-
-  const getPlayerAdp = (player: Player, scoringType: string): number | undefined => {
-    switch (scoringType) {
-      case 'standard':
-        return player.adp_standard;
-      case 'ppr':
-        return player.adp_ppr;
-      case 'half_ppr':
-        return player.adp_half_ppr;
-      default:
-        return player.adp_ppr;
-    }
-  };
-
-  const getPlayerPreviousYearPoints = (player: Player, scoringType: string): number | undefined => {
-    switch (scoringType) {
-      case 'standard':
-        return player.previous_year_points_standard;
-      case 'ppr':
-        return player.previous_year_points_ppr;
-      case 'half_ppr':
-        return player.previous_year_points_half_ppr;
-      default:
-        return player.previous_year_points_ppr;
-    }
-  };
 
   if (loading) {
     return (

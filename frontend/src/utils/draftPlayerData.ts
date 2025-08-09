@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Player, DraftStateResponse, DraftPick } from '../types/draft';
+import { Player, DraftStateResponse } from '../types/draft';
 import { draftApi } from '../services/draftApi';
 
 /**

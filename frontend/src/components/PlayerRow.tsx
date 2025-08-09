@@ -55,23 +55,9 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
     }
   };
 
-  // Get previous year points based on scoring type
-  const getPreviousYearPoints = (player: Player): number | undefined => {
-    switch (scoringType) {
-      case 'standard':
-        return player.previous_year_points_standard;
-      case 'ppr':
-        return player.previous_year_points_ppr;
-      case 'half_ppr':
-        return player.previous_year_points_half_ppr;
-      default:
-        return player.previous_year_points_ppr;
-    }
-  };
 
   const adpValue = getAdpValue(player);
   const rankValue = getEcrRank(player);
-  const previousYearPoints = getPreviousYearPoints(player);
 
   return (
     <Tr

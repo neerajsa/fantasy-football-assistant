@@ -7,8 +7,6 @@ import {
   VStack,
   HStack,
   Text,
-  Card,
-  CardBody,
   Table,
   Thead,
   Tbody,
@@ -82,7 +80,6 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
 
   // Color scheme - consistent with configuration page
   const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
   const primaryColor = 'purple';
   const accentColor = 'teal';
   const hoverBg = useColorModeValue('gray.50', 'gray.700');

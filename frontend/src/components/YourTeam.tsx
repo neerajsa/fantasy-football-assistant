@@ -39,13 +39,6 @@ const YourTeam: React.FC<YourTeamProps> = ({
   // Color scheme - consistent with existing app
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const primaryColor = 'purple';
-  const accentColor = 'teal';
-
-  // Get user team
-  const getUserTeam = () => {
-    return draftState?.draft_session.teams?.find(team => team.is_user);
-  };
 
   // Use shared player data hook (same pattern as DraftBoard)
   const playersData = useDraftPlayerData(draftId, draftState);
