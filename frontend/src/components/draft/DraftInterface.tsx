@@ -217,9 +217,6 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
 
     // If it's an AI team, make the AI pick
     try {
-      // Add a small delay for visual effect
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       // Make single AI pick
       await draftApi.makeAIPick(draftId);
       
