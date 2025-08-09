@@ -28,7 +28,7 @@ import {
   Heading
 } from '@chakra-ui/react';
 import DraftBoard from './DraftBoard';
-import PlayerSearch from './PlayerSearch';
+import DraftPanel from './DraftPanel';
 import {
   DraftStateResponse,
   Player,
@@ -440,9 +440,9 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
           />
         </GridItem>
 
-        {/* Player Search Panel */}
+        {/* Draft Panel */}
         <GridItem w="500px" flexShrink={0} overflow="auto">
-          <PlayerSearch
+          <DraftPanel
             draftId={draftId}
             onPlayerSelect={handlePlayerSelect}
             onMakePick={handleMakePick}
@@ -450,6 +450,7 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
             currentUserTeamId={userTeam?.id}
             scoringType={draft_session.scoring_type}
             refreshTrigger={playerSearchRefreshTrigger}
+            draftState={draftState}
           />
         </GridItem>
       </Grid>

@@ -191,19 +191,18 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
   }
 
   return (
-    <Card bg={cardBg} shadow="sm" border="1px" borderColor={borderColor} w="100%" h="100%">
-      <CardBody p={4} display="flex" flexDirection="column" h="100%">
-        {/* Header */}
-        <Flex justify="space-between" align="center" mb={4}>
-          <Heading as="h2" size="lg" color={`${primaryColor}.600`} fontWeight="bold">
-            Available Players
-          </Heading>
-          <Badge colorScheme={accentColor} size="sm">
-            {players.length} players
-          </Badge>
-        </Flex>
-        {/* Search and Filter Controls */}
-        <VStack spacing={4} mb={4}>
+    <Box display="flex" flexDirection="column" h="100%" overflow="hidden">
+      {/* Header */}
+      <Flex justify="space-between" align="center" mb={4} px={4} pt={4} flexShrink={0}>
+        <Heading as="h2" size="lg" color={`${primaryColor}.600`} fontWeight="bold">
+          Available Players
+        </Heading>
+        <Badge colorScheme={accentColor} size="sm">
+          {players.length} players
+        </Badge>
+      </Flex>
+      {/* Search and Filter Controls */}
+      <VStack spacing={4} mb={4} px={4} flexShrink={0}>
           {/* Search and Position Filter */}
           <HStack w="full" spacing={3}>
             <InputGroup flex={2}>
@@ -278,39 +277,39 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
             </Button>
           </HStack>
 
-        </VStack>
+      </VStack>
 
-        <Divider mb={4} />
+      <Divider mb={4} />
 
-        {/* Error Alert */}
-        {error && (
-          <Alert status="error" mb={4} size="sm" borderRadius="md">
-            <AlertIcon />
-            <Text fontSize="sm">{error}</Text>
-          </Alert>
-        )}
+      {/* Error Alert */}
+      {error && (
+        <Alert status="error" mb={4} mx={4} size="sm" borderRadius="md">
+          <AlertIcon />
+          <Text fontSize="sm">{error}</Text>
+        </Alert>
+      )}
 
-        {/* Players Table */}
-        <Box 
-          flex={1} 
-          overflowY="auto"
-          css={{
-            '&::-webkit-scrollbar': {
-              width: '8px',
-            },
-            '&::-webkit-scrollbar-track': {
-              background: '#f1f1f1',
-              borderRadius: '4px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              background: '#888',
-              borderRadius: '4px',
-            },
-            '&::-webkit-scrollbar-thumb:hover': {
-              background: '#555',
-            },
-          }}
-        >
+      {/* Players Table */}
+      <Box 
+        flex={1} 
+        overflowY="auto"
+        css={{
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#888',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            background: '#555',
+          },
+        }}
+      >
           <Table size="sm" variant="simple">
             <Thead position="sticky" top={0} bg={cardBg} zIndex={1}>
               <Tr>
@@ -379,9 +378,8 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
               </Button>
             </Box>
           )}
-        </Box>
-      </CardBody>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 
