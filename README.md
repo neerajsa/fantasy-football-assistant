@@ -5,38 +5,61 @@ A web-based application designed to assist fantasy football players during their
 ## 🚀 Features
 
 ### ✅ Currently Implemented
-- **Draft Configuration**: Complete setup for draft parameters including:
-  - Scoring systems (Standard, PPR, Half-PPR)
-  - Draft types (Snake, Linear)
-  - Team count (4-32 teams)
-  - Customizable roster positions (QB, RB, WR, TE, FLEX, K, D/ST, Bench)
-  - Random or manual draft position selection
 
-- **Player Rankings Database**: Two comprehensive ranking systems:
-  - **FantasyPros Integration**: Expert consensus rankings with 539+ players
-  - **Custom Rankings**: Proprietary algorithm combining multiple data sources
-  - **API Endpoints**: Full REST API for accessing player rankings
-  - **Multiple Scoring Types**: Support for Standard, PPR, and Half-PPR
+#### **Mock Draft Simulator** 
+- **Full Interactive Draft Experience**: Complete draft sessions with AI opponents
+- **Smart AI Teams**: Balanced AI drafting strategy using expert rankings
+- **Real-time Draft Board**: Live visualization of all picks across teams
+- **Draft Controls**: 
+  - **Skip to User Pick**: Fast-forward through AI picks to your turn
+  - **Undo User Pick**: Revert your previous pick and all subsequent picks
+  - **Auto Draft**: Let AI make picks for you automatically
+- **Player Search & Filtering**: Advanced search by position, team, rankings
+- **Your Team View**: Track your drafted players with roster management
+
+#### **Draft Configuration** 
+- **Scoring Systems**: Standard, PPR, Half-PPR support
+- **Draft Types**: Snake and Linear draft formats
+- **Team Count**: 4-32 teams supported
+- **Customizable Rosters**: QB, RB, WR, TE, FLEX, K, D/ST, Bench positions
+- **Draft Position**: Random or manual selection
+
+#### **Player Rankings Database**
+- **FantasyPros Integration**: Expert consensus rankings with 539+ players
+- **Custom Rankings**: Proprietary algorithm with multiple data sources
+- **Scoring-Aware Rankings**: Optimized rankings per scoring system
+- **Full REST API**: Complete endpoints for player data access
+- **Real-time Updates**: Live ranking adjustments during draft
+
+#### **Advanced Features**
+- **AI-Powered Recommendations**: Smart pick suggestions based on roster needs
+- **Draft State Management**: Full undo/redo capabilities with state integrity
+- **Performance Optimizations**: Fast AI picks with configurable delays
+- **Responsive UI**: Mobile-friendly design with modern interface
 
 ### 🔄 Coming Soon
-- Mock Draft Simulator with AI opponents
-- Live Draft Aid for real-time assistance
-- AI-powered player recommendations
+- Live Draft Aid for real-time assistance with external platforms
 - Post-draft analysis and team grading
-- Player ranking system with data aggregation
+- Custom player notes and personal rankings
+- Draft history and analytics
 
 ## 🛠 Tech Stack
 
-- **Backend**: FastAPI (Python)
-- **Frontend**: React with TypeScript
-- **UI Framework**: Chakra UI
-- **Development**: Hot reloading for both frontend and backend
+- **Backend**: FastAPI (Python) with SQLAlchemy ORM
+- **Database**: PostgreSQL with Alembic migrations
+- **Frontend**: React 19 with TypeScript
+- **UI Framework**: Chakra UI with React Icons
+- **State Management**: React Hooks with custom utilities
+- **API Client**: Custom fetch-based service layer
+- **Development**: Hot reloading, ESLint, TypeScript compilation
+- **Architecture**: RESTful API with component-based frontend
 
 ## 📋 Prerequisites
 
-- Python 3.8+ 
-- Node.js 14+
-- npm or yarn package manager
+- **Python 3.8+** (3.13 recommended)
+- **Node.js 16+** (18+ recommended) 
+- **PostgreSQL 12+** (for database)
+- **npm** package manager
 
 ## 🚀 Installation & Setup
 
@@ -46,29 +69,59 @@ git clone <repository-url>
 cd fantasy-football-assistant
 ```
 
-### 2. Backend Setup
+### 2. Database Setup
+
+#### Install and Start PostgreSQL
+```bash
+# On macOS with Homebrew
+brew install postgresql
+brew services start postgresql
+
+# On Ubuntu/Debian
+sudo apt-get install postgresql postgresql-contrib
+sudo systemctl start postgresql
+
+# Create database and user
+createdb fantasy_football
+psql -d fantasy_football -c "CREATE USER fantasy_user WITH PASSWORD 'fantasy_password';"
+psql -d fantasy_football -c "GRANT ALL PRIVILEGES ON DATABASE fantasy_football TO fantasy_user;"
+```
+
+### 3. Backend Setup
 
 #### Create Virtual Environment
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+cd backend
+python3 -m venv backend_venv
+source backend_venv/bin/activate  # On Windows: backend_venv\Scripts\activate
 ```
 
 #### Install Python Dependencies
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt  # (if exists)
+pip install fastapi uvicorn sqlalchemy psycopg2-binary alembic python-dotenv
 ```
 
-### 3. Frontend Setup
+#### Run Database Migrations
+```bash
+alembic upgrade head
+```
+
+### 4. Frontend Setup
 
 #### Navigate to Frontend Directory
 ```bash
-cd frontend
+cd ../frontend  # From backend directory
 ```
 
 #### Install Node Dependencies
 ```bash
 npm install
+```
+
+#### Install Additional UI Dependencies
+```bash
+npm install react-icons --legacy-peer-deps  # If not already installed
 ```
 
 ## 🏃‍♂️ Running the Application
@@ -78,16 +131,16 @@ npm install
 #### Terminal 1 - Start Backend Server
 ```bash
 # From project root directory
-source venv/bin/activate
 cd backend
-python run.py
+source backend_venv/bin/activate
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
 The backend will start at: `http://localhost:8000`
 
 #### Terminal 2 - Start Frontend Server
 ```bash
-# From project root directory
+# From project root directory (or new terminal)
 cd frontend
 npm start
 ```
@@ -107,6 +160,44 @@ cd frontend && BROWSER=none npm start &
 ```
 
 **Note**: The frontend takes 30-60 seconds to fully compile and start. Wait for the "Compiled successfully!" message before accessing the application.
+
+## 🎯 Using the Application
+
+### Creating and Starting a Mock Draft
+
+1. **Access the Application**: Open `http://localhost:3000`
+2. **Configure Draft**: Set up your draft parameters:
+   - **Teams**: Choose 4-32 teams (12 teams recommended)
+   - **Scoring**: Standard, PPR, or Half-PPR
+   - **Draft Type**: Snake (recommended) or Linear
+   - **Roster**: Customize positions (QB, RB, WR, TE, FLEX, K, D/ST, Bench)
+3. **Start Draft**: Click "Create Draft Session" then "Start Draft"
+
+### Draft Controls
+
+During the draft, you have three powerful controls:
+
+#### **Skip to User Pick** ⏭️
+- **When**: Available when it's an AI team's turn
+- **Purpose**: Fast-forward through all AI picks until it's your turn
+- **Usage**: Click when you want to skip the waiting and get to your pick quickly
+
+#### **Undo User Pick** ↩️ 
+- **When**: Available when it's your turn AND you've made at least one previous pick
+- **Purpose**: Revert your last pick and all subsequent AI picks
+- **Usage**: Use if you regret a pick or want to try a different strategy
+
+#### **Auto Draft** ✏️
+- **When**: Available anytime during an active draft
+- **Purpose**: Let AI make picks for your team automatically
+- **Usage**: Toggle on to enable automatic picking, toggle off to resume manual control
+
+### Tips for Best Experience
+
+- **Player Search**: Use the search box to filter by player name, position, or team
+- **Rankings**: Players are sorted by expert consensus rankings for your scoring type
+- **Your Team View**: Monitor your roster composition and remaining needs
+- **Performance**: Auto Draft and Skip modes remove delays for faster drafts
 
 ## 📊 Database Management
 
@@ -213,23 +304,39 @@ You should see the Fantasy Football Draft Assistant with a working draft configu
 fantasy-football-assistant/
 ├── backend/
 │   ├── app/
-│   │   ├── api/          # API route handlers
-│   │   ├── schemas/      # Pydantic models
-│   │   └── main.py       # FastAPI application
-│   └── run.py           # Development server
+│   │   ├── api/              # API route handlers
+│   │   │   ├── custom_rankings.py
+│   │   │   └── draft.py
+│   │   ├── database/         # Database models and connection
+│   │   │   ├── models.py
+│   │   │   └── connection.py
+│   │   ├── services/         # Business logic services
+│   │   │   ├── draft_service.py
+│   │   │   ├── draft_ai.py
+│   │   │   └── draft_engine.py
+│   │   ├── schemas/          # Pydantic models
+│   │   │   ├── draft.py
+│   │   │   └── custom_rankings.py
+│   │   ├── data_import/      # Data import scripts
+│   │   └── main.py           # FastAPI application
+│   ├── alembic/             # Database migrations
+│   ├── backend_venv/        # Virtual environment
+│   └── alembic.ini          # Alembic configuration
 ├── frontend/
-│   ├── public/          # Static files
 │   ├── src/
-│   │   ├── components/  # React components
-│   │   ├── services/    # API client code
-│   │   ├── types/       # TypeScript definitions
-│   │   └── App.tsx      # Main React component
+│   │   ├── components/      # React components
+│   │   │   ├── draft/       # Draft interface components
+│   │   │   └── player/      # Player-related components
+│   │   ├── services/        # API client code
+│   │   ├── types/           # TypeScript definitions
+│   │   ├── utils/           # Utility functions
+│   │   └── App.tsx          # Main React component
+│   ├── build/               # Production build
 │   └── package.json
-├── requirements.txt     # Python dependencies
-├── .env                # Environment variables
-├── PLAN.md             # Development roadmap
-├── PRD.md              # Product requirements
-└── README.md           # This file
+├── .env                     # Environment variables
+├── CLAUDE.md               # Project instructions
+├── PRD.md                  # Product requirements
+└── README.md               # This file
 ```
 
 ## 🐛 Troubleshooting
@@ -266,11 +373,23 @@ When the backend is running, visit `http://localhost:8000/docs` for interactive 
 
 ### Available Endpoints
 
+#### Core API
 - `GET /` - Root endpoint
 - `GET /health` - Health check
-- `POST /api/draft-config/` - Create draft configuration
-- `GET /api/draft-config/{id}` - Get draft configuration
-- `GET /api/draft-config/` - List all configurations
+
+#### Draft Management
+- `POST /api/draft/` - Create new draft session
+- `GET /api/draft/{draft_id}` - Get draft state
+- `POST /api/draft/{draft_id}/start` - Start draft
+- `POST /api/draft/{draft_id}/pick` - Make a pick
+- `POST /api/draft/{draft_id}/ai-pick` - Make AI pick
+- `POST /api/draft/{draft_id}/auto-draft-pick` - Make auto-draft pick
+- `DELETE /api/draft/{draft_id}/undo-to-user-pick` - Undo user pick
+
+#### Player Data
+- `GET /custom-rankings/` - Get custom player rankings
+- `GET /custom-rankings/positions/{position}` - Get players by position
+- `GET /api/draft/{draft_id}/players` - Get available players for draft
 
 ## 🔄 Development Workflow
 

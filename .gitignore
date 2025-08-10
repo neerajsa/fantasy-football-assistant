@@ -26,6 +26,8 @@ MANIFEST
 venv/
 env/
 ENV/
+backend_venv/
+*_venv/
 
 # Environment variables
 .env
@@ -45,5 +47,18 @@ Thumbs.db
 # Logs
 *.log
 
+# Database
+*.db
+*.sqlite
+*.sqlite3
+postgres_data/
+
 # Node modules (handled by frontend/.gitignore)
 node_modules/
+
+# Build artifacts
+frontend/build/
+*.tsbuildinfo
+
+# Backend specific
+alembic.ini.bak
