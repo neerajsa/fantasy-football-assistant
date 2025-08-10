@@ -504,3 +504,30 @@ class DraftService:
             raise ValueError(f"Team {team_id} not found in draft {draft_id}")
         
         return self.ai.get_pick_recommendations(draft_session, team, num_recommendations)
+    
+    def make_auto_draft_pick(self, draft_id: uuid.UUID) -> DraftPick:
+        """Make an auto-draft pick for the current user team"""
+        
+        draft_session = self.get_draft_session(draft_id)
+        if not draft_session:
+            raise ValueError(f"Draft session {draft_id} not found")
+        
+        if draft_session.status != DraftStatus.IN_PROGRESS:
+            raise ValueError(f"Draft is not in progress (status: {draft_session.status})")
+        
+        # Get current team using draft engine
+        draft_engine = DraftEngine(draft_session)
+        current_team = draft_engine.get_current_team()
+        
+        if not current_team:
+            raise ValueError("No current team found")
+        
+        if not current_team.is_user:
+            raise ValueError("Auto-draft can only be used for user teams")
+        
+        # Use AI to select the best player for the user team
+        selected_player_id = self.ai.make_ai_pick(draft_session, current_team, AIStrategy.BALANCED)
+        
+        # Make the pick using existing logic
+        pick_request = MakePickRequest(player_id=selected_player_id)
+        return self.make_pick(draft_id, current_team.id, pick_request)

@@ -96,6 +96,13 @@ class DraftApiService {
     });
   }
 
+  // Auto-draft functionality
+  async makeAutoDraftPick(draftId: string): Promise<DraftPick> {
+    return this.request<DraftPick>(`/api/draft/${draftId}/auto-draft-pick`, {
+      method: 'POST',
+    });
+  }
+
   async getAvailablePlayers(
     draftId: string, 
     filters: PlayerSearchFilters = {},

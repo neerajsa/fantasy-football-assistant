@@ -281,6 +281,21 @@ async def undo_to_user_pick(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/{draft_id}/auto-draft-pick", response_model=DraftPick, summary="Make an auto-draft pick for user team")
+async def make_auto_draft_pick(
+    draft_id: uuid.UUID,
+    draft_service: DraftService = Depends(get_draft_service)
+):
+    """Make an automatic pick for the user team using AI recommendations"""
+    try:
+        pick = draft_service.make_auto_draft_pick(draft_id)
+        return pick
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{draft_id}/teams/{team_id}/recommendations", summary="Get pick recommendations for team")
 async def get_pick_recommendations(
     draft_id: uuid.UUID,

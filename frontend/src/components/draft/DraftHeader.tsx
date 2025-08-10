@@ -10,7 +10,7 @@ import {
   Button,
   Heading
 } from '@chakra-ui/react';
-import { RepeatIcon, ArrowForwardIcon } from '@chakra-ui/icons';
+import { RepeatIcon, ArrowForwardIcon, EditIcon } from '@chakra-ui/icons';
 import { DraftStatus, DraftSession, DraftTeam } from '../../types/draft';
 import { useAppTheme } from '../../utils/theme';
 
@@ -24,6 +24,9 @@ interface DraftHeaderProps {
   canUndoUserPick?: boolean;
   canSkipToUser?: boolean;
   onUndoUserPick?: () => void;
+  isAutoDrafting?: boolean;
+  canToggleAutoDraft?: boolean;
+  onToggleAutoDraft?: () => void;
 }
 
 const DraftHeader: React.FC<DraftHeaderProps> = ({
@@ -35,7 +38,10 @@ const DraftHeader: React.FC<DraftHeaderProps> = ({
   onSkipToUser,
   canUndoUserPick = false,
   canSkipToUser = false,
-  onUndoUserPick
+  onUndoUserPick,
+  isAutoDrafting = false,
+  canToggleAutoDraft = false,
+  onToggleAutoDraft
 }) => {
   const { colors } = useAppTheme();
 
@@ -85,9 +91,16 @@ const DraftHeader: React.FC<DraftHeaderProps> = ({
                   {currentTeam.team_name}
                 </Text>
                 {isUserTurn ? (
-                  <Badge colorScheme={colors.accent} fontSize="md" p={2}>
-                    YOUR TURN
-                  </Badge>
+                  <VStack spacing={1}>
+                    <Badge colorScheme={colors.accent} fontSize="md" p={2}>
+                      YOUR TURN
+                    </Badge>
+                    {isAutoDrafting && (
+                      <Badge colorScheme="green" fontSize="xs" variant="solid">
+                        AUTO DRAFTING
+                      </Badge>
+                    )}
+                  </VStack>
                 ) : (
                   <Badge colorScheme={colors.primary} fontSize="sm">
                     On the clock
@@ -111,8 +124,8 @@ const DraftHeader: React.FC<DraftHeaderProps> = ({
           </VStack>
 
           {/* Draft Controls */}
-          <VStack align="end" spacing={2} minW="240px">
-            <HStack spacing={3}>
+          <VStack align="end" spacing={2} minW="280px">
+            <HStack spacing={2} wrap="wrap" justify="flex-end">
               {/* Undo User Pick Button */}
               {draftSession.status === DraftStatus.IN_PROGRESS && onUndoUserPick && (
                 <Button 
@@ -156,6 +169,28 @@ const DraftHeader: React.FC<DraftHeaderProps> = ({
                   cursor={canSkipToUser && !isSkippingToUser ? 'pointer' : 'not-allowed'}
                 >
                   {isSkippingToUser ? 'Skipping...' : 'Skip to Pick'}
+                </Button>
+              )}
+
+              {/* Auto Draft Button */}
+              {draftSession.status === DraftStatus.IN_PROGRESS && onToggleAutoDraft && (
+                <Button 
+                  size="sm" 
+                  variant={isAutoDrafting ? "solid" : "outline"}
+                  colorScheme={isAutoDrafting ? "green" : colors.accent}
+                  onClick={onToggleAutoDraft}
+                  isDisabled={!canToggleAutoDraft}
+                  leftIcon={<EditIcon />}
+                  _hover={{ 
+                    transform: canToggleAutoDraft ? 'translateY(-1px)' : 'none',
+                    boxShadow: canToggleAutoDraft ? 'md' : 'none',
+                    borderColor: canToggleAutoDraft ? (isAutoDrafting ? 'green.400' : `${colors.accent}.400`) : 'gray.300'
+                  }}
+                  transition="all 0.2s"
+                  opacity={canToggleAutoDraft ? 1 : 0.6}
+                  cursor={canToggleAutoDraft ? 'pointer' : 'not-allowed'}
+                >
+                  {isAutoDrafting ? 'Stop Auto' : 'Auto Draft'}
                 </Button>
               )}
             </HStack>

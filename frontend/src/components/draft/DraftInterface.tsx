@@ -36,6 +36,7 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
   const [makingPick, setMakingPick] = useState(false);
   const [playerSearchRefreshTrigger, setPlayerSearchRefreshTrigger] = useState(0);
   const [isSkippingToUser, setIsSkippingToUser] = useState(false);
+  const [isAutoDrafting, setIsAutoDrafting] = useState(false);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -220,6 +221,78 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
     }
   };
 
+  // Handle auto-draft toggle
+  const handleToggleAutoDraft = () => {
+    if (isAutoDrafting) {
+      // Stop auto-drafting
+      setIsAutoDrafting(false);
+      toast({
+        title: 'Auto Draft stopped',
+        description: 'You can now make picks manually',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
+    } else {
+      // Start auto-drafting
+      setIsAutoDrafting(true);
+      toast({
+        title: 'Auto Draft enabled',
+        description: 'System will make picks for you automatically',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // Auto-draft effect - make pick when it's user's turn and auto-draft is enabled
+  useEffect(() => {
+    const makeAutoPick = async () => {
+      if (!isAutoDrafting || !isUserTurn() || makingPick) return;
+      
+      try {
+        setMakingPick(true);
+        const pick = await draftApi.makeAutoDraftPick(draftId);
+        
+        // Refresh draft state after auto pick
+        await fetchDraftState();
+        
+        toast({
+          title: 'Auto pick made',
+          description: `Drafted ${pick.player?.player_name || 'player'}`,
+          status: 'success',
+          duration: 2000,
+          isClosable: true,
+        });
+
+        // Continue with normal AI pick progression after auto-draft pick
+        await processNextPick();
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to make auto pick';
+        
+        toast({
+          title: 'Auto draft error',
+          description: errorMessage,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        
+        // Stop auto-drafting on error
+        setIsAutoDrafting(false);
+      } finally {
+        setMakingPick(false);
+      }
+    };
+
+    // Add a small delay before making auto pick to allow UI to update
+    if (isAutoDrafting && isUserTurn()) {
+      const timer = setTimeout(makeAutoPick, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [draftState, isAutoDrafting, draftId, makingPick, fetchDraftState, toast]);
+
   // Get user team
   const getUserTeam = (): DraftTeam | undefined => {
     return draftState?.draft_session.teams?.find(team => team.is_user);
@@ -250,6 +323,11 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
   // Check if skip to user pick should be enabled
   const canSkipToUser = (): boolean => {
     return !isUserTurn() && draftState?.draft_session.status === DraftStatus.IN_PROGRESS;
+  };
+
+  // Check if auto-draft should be available
+  const canToggleAutoDraft = (): boolean => {
+    return draftState?.draft_session.status === DraftStatus.IN_PROGRESS;
   };
 
   // Check if a player is already drafted
@@ -284,8 +362,8 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
 
     // If it's an AI team, make the AI pick
     try {
-      // Add conditional delay - skip if rushing to user pick
-      if (!isSkippingToUser) {
+      // Add conditional delay - skip if rushing to user pick or auto-drafting
+      if (!isSkippingToUser && !isAutoDrafting) {
         await new Promise(resolve => setTimeout(resolve, 750));
       }
       
@@ -353,6 +431,9 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
         canUndoUserPick={canUndoUserPick()}
         canSkipToUser={canSkipToUser()}
         onUndoUserPick={handleUndoUserPick}
+        isAutoDrafting={isAutoDrafting}
+        canToggleAutoDraft={canToggleAutoDraft()}
+        onToggleAutoDraft={handleToggleAutoDraft}
       />
 
       {/* Main Draft Interface */}
