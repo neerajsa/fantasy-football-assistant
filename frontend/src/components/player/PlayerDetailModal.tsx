@@ -17,7 +17,7 @@ import {
   StatLabel,
   StatNumber
 } from '@chakra-ui/react';
-import { Player, DraftStatus, MakePickRequest } from '../../types/draft';
+import { Player, DraftStatus, MakePickRequest, DraftStateResponse } from '../../types/draft';
 import { getPlayerEcrRank, getPlayerAdp, getPlayerPreviousYearPoints } from '../../utils/playerUtils';
 
 interface PlayerDetailModalProps {
@@ -27,6 +27,7 @@ interface PlayerDetailModalProps {
   scoringType: string;
   draftStatus: DraftStatus;
   isPlayerDrafted: (player: Player) => boolean;
+  draftedPlayerTeam: (player: Player) => string;
   isUserTurn: boolean;
   makingPick: boolean;
   onMakePick: (pickRequest: MakePickRequest) => Promise<void>;
@@ -39,6 +40,7 @@ const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
   scoringType,
   draftStatus,
   isPlayerDrafted,
+  draftedPlayerTeam,
   isUserTurn,
   makingPick,
   onMakePick
@@ -94,7 +96,7 @@ const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                       Player Already Drafted
                     </Text>
                     <Text fontSize="sm" color="gray.500" textAlign="center">
-                      This player has already been selected by another team.
+                      This player has been drafted by {draftedPlayerTeam(selectedPlayer)}.
                     </Text>
                     <Button variant="outline" onClick={onClose}>
                       Close

@@ -338,6 +338,14 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
     );
   };
 
+  // Get the team that drafted a player
+  const draftedPlayerTeam = (player: Player): string => {
+    if (!draftState?.draft_session.picks) return '';
+    const pick = draftState.draft_session.picks.find(pick => pick.player_id === player.id);
+    const team = draftState.draft_session.teams?.find(team => team.id === pick?.team_id);
+    return team?.team_name || '';
+  };
+
   // Process next pick in sequence - handles both user and AI picks
   const processNextPick = async () => {
     if (!draftState) return;
@@ -476,6 +484,7 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
         scoringType={draft_session.scoring_type}
         draftStatus={draft_session.status}
         isPlayerDrafted={isPlayerDrafted}
+        draftedPlayerTeam={draftedPlayerTeam}
         isUserTurn={isUserTurn()}
         makingPick={makingPick}
         onMakePick={handleMakePick}
