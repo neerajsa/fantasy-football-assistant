@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database URL from environment variables
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://fantasy_user:fantasy_password@localhost:5432/fantasy_football")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://fantasy_user:fantasy_password@localhost:5432/fantasy_football")
 
 # Create engine
 engine = create_engine(

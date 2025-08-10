@@ -90,6 +90,12 @@ class DraftApiService {
     });
   }
 
+  async undoToUserPick(draftId: string): Promise<DraftStateResponse> {
+    return this.request<DraftStateResponse>(`/api/draft/${draftId}/undo-to-user-pick`, {
+      method: 'DELETE',
+    });
+  }
+
   async getAvailablePlayers(
     draftId: string, 
     filters: PlayerSearchFilters = {},

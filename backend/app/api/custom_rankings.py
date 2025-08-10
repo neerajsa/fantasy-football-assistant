@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, List
-import psycopg
+import psycopg2
 from ..schemas.custom_rankings import CustomRankingPlayerResponse, CustomRankingPlayer as CustomRankingPlayerSchema
 import logging
 from datetime import datetime

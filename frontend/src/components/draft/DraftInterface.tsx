@@ -22,6 +22,7 @@ import {
   DraftTeam
 } from '../../types/draft';
 import { draftApi } from '../../services/draftApi';
+import { useDraftPlayerData, getUserDraftedPlayers } from '../../utils/draftPlayerData';
 
 interface DraftInterfaceProps {
   draftId: string;
@@ -38,6 +39,9 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
+
+  // Use draft player data utilities
+  const playersData = useDraftPlayerData(draftId, draftState);
 
   // Color scheme - consistent with configuration page
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -189,6 +193,33 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
     });
   };
 
+  // Handle undo user pick
+  const handleUndoUserPick = async () => {
+    try {
+      const updatedState = await draftApi.undoToUserPick(draftId);
+      setDraftState(updatedState);
+      setPlayerSearchRefreshTrigger(prev => prev + 1);
+      
+      toast({
+        title: 'Pick undone successfully',
+        description: 'Your previous pick and all subsequent picks have been removed',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to undo pick';
+      
+      toast({
+        title: 'Undo failed',
+        description: errorMessage,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
   // Get user team
   const getUserTeam = (): DraftTeam | undefined => {
     return draftState?.draft_session.teams?.find(team => team.is_user);
@@ -197,6 +228,28 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
   // Check if it's user's turn
   const isUserTurn = (): boolean => {
     return draftState?.current_team.is_user || false;
+  };
+
+  // Check if user has made any picks (kept for backwards compatibility but not used)
+  // const userHasPicks = (): boolean => {
+  //   return getUserDraftedPlayers(draftState, playersData).length > 0;
+  // };
+
+  // Check if undo user pick should be available
+  const canUndoUserPick = (): boolean => {
+    // Must be during an active draft
+    if (!draftState || draftState.draft_session.status !== DraftStatus.IN_PROGRESS) return false;
+    
+    // Must be user's turn (only allow undo when user is on the clock)
+    if (!isUserTurn()) return false;
+    
+    // User must have made at least one pick previously
+    return getUserDraftedPlayers(draftState, playersData).length > 0;
+  };
+
+  // Check if skip to user pick should be enabled
+  const canSkipToUser = (): boolean => {
+    return !isUserTurn() && draftState?.draft_session.status === DraftStatus.IN_PROGRESS;
   };
 
   // Check if a player is already drafted
@@ -297,6 +350,9 @@ const DraftInterface: React.FC<DraftInterfaceProps> = ({ draftId }) => {
         onStartDraft={handleStartDraft}
         isSkippingToUser={isSkippingToUser}
         onSkipToUser={handleSkipToUser}
+        canUndoUserPick={canUndoUserPick()}
+        canSkipToUser={canSkipToUser()}
+        onUndoUserPick={handleUndoUserPick}
       />
 
       {/* Main Draft Interface */}

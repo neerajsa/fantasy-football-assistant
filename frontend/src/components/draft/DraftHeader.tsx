@@ -10,6 +10,7 @@ import {
   Button,
   Heading
 } from '@chakra-ui/react';
+import { RepeatIcon, ArrowForwardIcon } from '@chakra-ui/icons';
 import { DraftStatus, DraftSession, DraftTeam } from '../../types/draft';
 import { useAppTheme } from '../../utils/theme';
 
@@ -20,6 +21,9 @@ interface DraftHeaderProps {
   onStartDraft: () => void;
   isSkippingToUser?: boolean;
   onSkipToUser?: () => void;
+  canUndoUserPick?: boolean;
+  canSkipToUser?: boolean;
+  onUndoUserPick?: () => void;
 }
 
 const DraftHeader: React.FC<DraftHeaderProps> = ({
@@ -28,7 +32,10 @@ const DraftHeader: React.FC<DraftHeaderProps> = ({
   isUserTurn,
   onStartDraft,
   isSkippingToUser = false,
-  onSkipToUser
+  onSkipToUser,
+  canUndoUserPick = false,
+  canSkipToUser = false,
+  onUndoUserPick
 }) => {
   const { colors } = useAppTheme();
 
@@ -104,21 +111,54 @@ const DraftHeader: React.FC<DraftHeaderProps> = ({
           </VStack>
 
           {/* Draft Controls */}
-          <VStack align="end" spacing={2} minW="200px">
-            {/* Skip to User Pick Button */}
-            {!isUserTurn && draftSession.status === DraftStatus.IN_PROGRESS && onSkipToUser && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                colorScheme={colors.primary}
-                onClick={onSkipToUser}
-                isDisabled={isSkippingToUser}
-                loadingText="Skipping..."
-                isLoading={isSkippingToUser}
-              >
-                {isSkippingToUser ? 'Skipping...' : 'Skip to User Pick'}
-              </Button>
-            )}
+          <VStack align="end" spacing={2} minW="240px">
+            <HStack spacing={3}>
+              {/* Undo User Pick Button */}
+              {draftSession.status === DraftStatus.IN_PROGRESS && onUndoUserPick && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  colorScheme="orange"
+                  onClick={onUndoUserPick}
+                  isDisabled={!canUndoUserPick}
+                  leftIcon={<RepeatIcon />}
+                  _hover={{ 
+                    transform: canUndoUserPick ? 'translateY(-1px)' : 'none',
+                    boxShadow: canUndoUserPick ? 'md' : 'none',
+                    borderColor: canUndoUserPick ? 'orange.400' : 'gray.300'
+                  }}
+                  transition="all 0.2s"
+                  opacity={canUndoUserPick ? 1 : 0.6}
+                  cursor={canUndoUserPick ? 'pointer' : 'not-allowed'}
+                >
+                  Undo Pick
+                </Button>
+              )}
+              
+              {/* Skip to User Pick Button */}
+              {draftSession.status === DraftStatus.IN_PROGRESS && onSkipToUser && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  colorScheme={colors.primary}
+                  onClick={onSkipToUser}
+                  isDisabled={!canSkipToUser || isSkippingToUser}
+                  leftIcon={<ArrowForwardIcon />}
+                  loadingText="Skipping..."
+                  isLoading={isSkippingToUser}
+                  _hover={{ 
+                    transform: canSkipToUser && !isSkippingToUser ? 'translateY(-1px)' : 'none',
+                    boxShadow: canSkipToUser && !isSkippingToUser ? 'md' : 'none',
+                    borderColor: canSkipToUser && !isSkippingToUser ? `${colors.primary}.400` : 'gray.300'
+                  }}
+                  transition="all 0.2s"
+                  opacity={canSkipToUser ? 1 : 0.6}
+                  cursor={canSkipToUser && !isSkippingToUser ? 'pointer' : 'not-allowed'}
+                >
+                  {isSkippingToUser ? 'Skipping...' : 'Skip to Pick'}
+                </Button>
+              )}
+            </HStack>
           </VStack>
         </Grid>
       </CardBody>

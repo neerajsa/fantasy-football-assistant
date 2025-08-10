@@ -266,6 +266,20 @@ async def make_ai_pick(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.delete("/{draft_id}/undo-to-user-pick", response_model=DraftStateResponse, summary="Undo all picks back to user's previous pick")
+async def undo_to_user_pick(
+    draft_id: uuid.UUID,
+    draft_service: DraftService = Depends(get_draft_service)
+):
+    """Undo all draft picks back to and including the user's most recent pick"""
+    try:
+        draft_state = draft_service.undo_to_user_pick(draft_id)
+        return draft_state
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/{draft_id}/teams/{team_id}/recommendations", summary="Get pick recommendations for team")
 async def get_pick_recommendations(

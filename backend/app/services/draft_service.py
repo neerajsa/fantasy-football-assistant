@@ -376,6 +376,119 @@ class DraftService:
         pick_request = MakePickRequest(player_id=selected_player_id)
         return self.make_pick(draft_id, current_team.id, pick_request)
     
+    def undo_to_user_pick(self, draft_id: uuid.UUID) -> DraftStateResponse:
+        """Undo all draft picks back to and including the user's most recent pick"""
+        
+        draft_session = self.get_draft_session(draft_id)
+        if not draft_session:
+            raise ValueError(f"Draft session {draft_id} not found")
+        
+        if draft_session.status != DraftStatus.IN_PROGRESS:
+            raise ValueError("Can only undo picks for drafts in progress")
+        
+        # Find the user team
+        user_team = None
+        for team in draft_session.teams:
+            if team.is_user:
+                user_team = team
+                break
+        
+        if not user_team:
+            raise ValueError("No user team found in this draft")
+        
+        # Find the user's most recent pick
+        user_picks = self.db.query(DraftPick).filter(
+            and_(
+                DraftPick.draft_session_id == draft_id,
+                DraftPick.team_id == user_team.id,
+                DraftPick.player_id.isnot(None)  # Only completed picks
+            )
+        ).order_by(desc(DraftPick.pick_number)).all()
+        
+        if not user_picks:
+            raise ValueError("User has not made any picks to undo")
+        
+        # Get the most recent user pick
+        most_recent_user_pick = user_picks[0]
+        undo_from_pick_number = most_recent_user_pick.pick_number
+        
+        # Clear all picks from that pick number onwards (preserve pick slots)
+        picks_to_clear = self.db.query(DraftPick).filter(
+            and_(
+                DraftPick.draft_session_id == draft_id,
+                DraftPick.pick_number >= undo_from_pick_number
+            )
+        ).all()
+        
+        # Clear the pick data but preserve the pick slots
+        for pick in picks_to_clear:
+            pick.player_id = None
+            pick.picked_at = None
+            pick.pick_time_seconds = None
+        
+        # Update current pick info
+        draft_session.current_pick = undo_from_pick_number
+        
+        # Calculate round number from pick number
+        draft_session.current_round = ((undo_from_pick_number - 1) // draft_session.num_teams) + 1
+        
+        # Get the team that should be picking now using DraftTurnLogic
+        team_index = DraftTurnLogic.get_current_team_index(
+            draft_session.draft_type,
+            draft_session.num_teams,
+            draft_session.current_round,
+            undo_from_pick_number
+        )
+        
+        # Find team by team_index (both are 0-based)
+        current_team = None
+        for team in draft_session.teams:
+            if team.team_index == team_index:
+                current_team = team
+                break
+        
+        if not current_team:
+            raise ValueError("Could not determine current team after undo")
+        
+        # Recalculate roster counts for all teams efficiently
+        # Get all completed picks with player data in one query
+        completed_picks = self.db.query(DraftPick, CustomRankingPlayer).join(
+            CustomRankingPlayer, DraftPick.player_id == CustomRankingPlayer.id
+        ).filter(
+            and_(
+                DraftPick.draft_session_id == draft_id,
+                DraftPick.player_id.isnot(None),
+                DraftPick.picked_at.isnot(None)
+            )
+        ).all()
+        
+        # Reset all team roster counts to match original roster structure
+        for team in draft_session.teams:
+            team.current_roster = {pos: 0 for pos in draft_session.roster_positions.keys()}
+        
+        # Count completed picks by team and position
+        for pick, player in completed_picks:
+            # Find the team for this pick
+            team = next((t for t in draft_session.teams if str(t.id) == str(pick.team_id)), None)
+            if team and player:
+                position_key = player.position.lower()
+                if position_key in team.current_roster:
+                    team.current_roster[position_key] += 1
+                else:
+                    # Handle flex positions or map to appropriate roster slot
+                    if position_key in ['rb', 'wr', 'te']:
+                        if 'flex' in team.current_roster:
+                            team.current_roster['flex'] += 1
+                        else:
+                            # If no flex slot, just count in the position
+                            team.current_roster[position_key] = team.current_roster.get(position_key, 0) + 1
+        
+        # Save changes
+        self.db.commit()
+        
+        # Return updated draft state
+        return self.get_draft_state(draft_id)
+    
     def get_pick_recommendations(self, draft_id: uuid.UUID, team_id: uuid.UUID, num_recommendations: int = 5) -> List[Dict[str, Any]]:
         """Get AI-powered pick recommendations for a team"""
         
